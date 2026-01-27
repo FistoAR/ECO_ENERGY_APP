@@ -18,11 +18,6 @@ import {
   FiUsers,
   FiBriefcase,
   FiLoader,
-  FiDatabase,
-  FiDownload,
-  FiFileText,
-  FiCheckCircle,
-  FiAlertCircle,
 } from "react-icons/fi";
 import {
   customerApi,
@@ -60,126 +55,12 @@ const customerTypes = [
   "Government",
 ];
 
-// Excel format columns definition
-const excelColumns = [
-  {
-    column: "customer_name",
-    header: "Customer Name",
-    required: true,
-    example: "John Doe",
-    description: "Full name of the customer",
-  },
-  {
-    column: "contact_number",
-    header: "Contact Number",
-    required: true,
-    example: "9876543210",
-    description: "Primary contact number",
-  },
-  {
-    column: "company_name",
-    header: "Company Name",
-    required: false,
-    example: "ABC Corp",
-    description: "Company or business name",
-  },
-  {
-    column: "customer_type",
-    header: "Customer Type",
-    required: false,
-    example: "Retail",
-    description: "Retail, Wholesale, Distributor, Corporate, Government",
-  },
-  {
-    column: "email",
-    header: "Email",
-    required: false,
-    example: "john@example.com",
-    description: "Email address",
-  },
-  {
-    column: "whatsapp_number",
-    header: "WhatsApp Number",
-    required: false,
-    example: "9876543210",
-    description: "WhatsApp contact number",
-  },
-  {
-    column: "alternate_number",
-    header: "Alternate Number",
-    required: false,
-    example: "9876543211",
-    description: "Alternative contact number",
-  },
-  {
-    column: "address",
-    header: "Address",
-    required: false,
-    example: "123 Main St, City",
-    description: "Full address",
-  },
-  {
-    column: "product_category",
-    header: "Product Category",
-    required: false,
-    example: "Tiles",
-    description: "Product category name",
-  },
-  {
-    column: "product_size",
-    header: "Product Size",
-    required: false,
-    example: "60x60",
-    description: "Product size specification",
-  },
-  {
-    column: "type_of_enquiry",
-    header: "Type of Enquiry",
-    required: false,
-    example: "New Purchase",
-    description: "Enquiry type name",
-  },
-  {
-    column: "priority",
-    header: "Priority",
-    required: false,
-    example: "medium",
-    description: "low, medium, or high",
-  },
-  {
-    column: "reference_by",
-    header: "Reference By",
-    required: false,
-    example: "Jane Smith",
-    description: "Referral source name",
-  },
-  {
-    column: "remarks",
-    header: "Remarks",
-    required: false,
-    example: "Interested in bulk order",
-    description: "Additional notes",
-  },
-  {
-    column: "next_followup_date",
-    header: "Next Follow-up Date",
-    required: false,
-    example: "2024-12-25",
-    description: "Date in YYYY-MM-DD format",
-  },
-];
-
 export default function CustomerReg() {
   const [form, setForm] = useState(initialForm);
   const [files, setFiles] = useState([]);
   const [showTypeOptions, setShowTypeOptions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Bulk upload modal state
-  const [showBulkModal, setShowBulkModal] = useState(false);
-  const [bulkFile, setBulkFile] = useState(null);
-  const [bulkUploadStatus, setBulkUploadStatus] = useState(null); // 'ready', 'uploading', 'success', 'error'
 
   // Data from API
   const [currentExpo, setCurrentExpo] = useState(null);
@@ -192,7 +73,6 @@ export default function CustomerReg() {
   const fileRef = useRef();
   const cameraRef = useRef();
   const customerTypeRef = useRef();
-  const bulkFileRef = useRef();
 
   // Fetch initial data
   useEffect(() => {
@@ -461,71 +341,6 @@ export default function CustomerReg() {
     setForm((prev) => ({ ...prev, product_id: null }));
   }, []);
 
-  // Bulk upload handlers
-  const handleBulkFileSelect = useCallback((e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const validTypes = [
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-excel",
-        ".xlsx",
-        ".xls",
-      ];
-      const isValid =
-        validTypes.some((type) => file.type.includes(type)) ||
-        file.name.endsWith(".xlsx") ||
-        file.name.endsWith(".xls");
-
-      if (isValid) {
-        setBulkFile(file);
-        setBulkUploadStatus("ready");
-      } else {
-        alert("Please upload a valid Excel file (.xlsx or .xls)");
-        e.target.value = "";
-      }
-    }
-  }, []);
-
-  const handleBulkUpload = useCallback(() => {
-    if (!bulkFile) {
-      alert("Please select a file first");
-      return;
-    }
-    // This will be implemented when backend is ready
-    setBulkUploadStatus("uploading");
-    // Simulate upload for now
-    setTimeout(() => {
-      setBulkUploadStatus("success");
-    }, 2000);
-  }, [bulkFile]);
-
-  const handleDownloadTemplate = useCallback(() => {
-    // Create CSV content for template
-    const headers = excelColumns.map((col) => col.column).join(",");
-    const exampleRow = excelColumns.map((col) => col.example).join(",");
-    const csvContent = `${headers}\n${exampleRow}`;
-
-    // Create and download file
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "customer_import_template.csv";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, []);
-
-  const closeBulkModal = useCallback(() => {
-    setShowBulkModal(false);
-    setBulkFile(null);
-    setBulkUploadStatus(null);
-    if (bulkFileRef.current) {
-      bulkFileRef.current.value = "";
-    }
-  }, []);
-
   const filteredTypes = customerTypes.filter((t) =>
     t.toLowerCase().includes(form.customer_type?.toLowerCase() || ""),
   );
@@ -590,30 +405,18 @@ export default function CustomerReg() {
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                <FiUser className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold text-white">
-                  New Customer Registration
-                </h2>
-                <p className="text-indigo-100 text-xs sm:text-sm mt-0.5">
-                  {getExpoDisplayName()}
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <FiUser className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            {/* Bulk Data Button */}
-            <button
-              type="button"
-              onClick={() => setShowBulkModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium text-sm transition-all border border-white/30"
-            >
-              <FiDatabase className="w-4 h-4" />
-              <span className="hidden sm:inline">Bulk Upload</span>
-              <span className="sm:hidden">Bulk</span>
-            </button>
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-white">
+                New Customer Registration
+              </h2>
+              <p className="text-indigo-100 text-xs sm:text-sm mt-0.5">
+                {getExpoDisplayName()}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -1093,212 +896,6 @@ export default function CustomerReg() {
           </div>
         </form>
       </div>
-
-      {/* Bulk Upload Modal */}
-      {showBulkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <FiDatabase className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg sm:text-xl font-bold text-white">
-                    Bulk Customer Upload
-                  </h3>
-                  <p className="text-indigo-100 text-xs sm:text-sm">
-                    Import multiple customers from Excel
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={closeBulkModal}
-                className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center text-white transition-all"
-              >
-                <FiX className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-              {/* Upload Section */}
-              <div className="mb-6">
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
-                  <div>
-                    <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                      <FiUpload className="w-4 h-4 text-indigo-600" />
-                      Upload Excel File
-                    </h4>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Supported formats: .xlsx, .xls
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleDownloadTemplate}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg font-medium text-sm transition-all"
-                  >
-                    <FiDownload className="w-4 h-4" />
-                    Download Template
-                  </button>
-                </div>
-
-                {/* File Upload Area */}
-                <div
-                  onClick={() => bulkFileRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-all ${
-                    bulkFile
-                      ? "border-green-400 bg-green-50"
-                      : "border-gray-300 hover:border-indigo-400 hover:bg-indigo-50"
-                  }`}
-                >
-                  <input
-                    ref={bulkFileRef}
-                    type="file"
-                    accept=".xlsx,.xls"
-                    onChange={handleBulkFileSelect}
-                    hidden
-                  />
-                  {bulkFile ? (
-                    <div className="flex items-center justify-center gap-3">
-                      <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                        <FiFileText className="w-6 h-6 text-green-600" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-medium text-gray-800">
-                          {bulkFile.name}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {formatFileSize(bulkFile.size)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setBulkFile(null);
-                          setBulkUploadStatus(null);
-                          if (bulkFileRef.current) bulkFileRef.current.value = "";
-                        }}
-                        className="ml-2 w-8 h-8 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center text-red-600 transition-all"
-                      >
-                        <FiX className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <FiUpload className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <p className="text-gray-600 font-medium">
-                        Click to upload or drag and drop
-                      </p>
-                      <p className="text-sm text-gray-400 mt-1">
-                        Excel files only (.xlsx, .xls)
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                {/* Upload Status */}
-                {bulkUploadStatus === "uploading" && (
-                  <div className="mt-4 p-4 bg-blue-50 rounded-xl flex items-center gap-3">
-                    <FiLoader className="w-5 h-5 text-blue-600 animate-spin" />
-                    <span className="text-blue-700 font-medium">
-                      Uploading and processing...
-                    </span>
-                  </div>
-                )}
-                {bulkUploadStatus === "success" && (
-                  <div className="mt-4 p-4 bg-green-50 rounded-xl flex items-center gap-3">
-                    <FiCheckCircle className="w-5 h-5 text-green-600" />
-                    <span className="text-green-700 font-medium">
-                      File uploaded successfully! (Backend integration pending)
-                    </span>
-                  </div>
-                )}
-                {bulkUploadStatus === "error" && (
-                  <div className="mt-4 p-4 bg-red-50 rounded-xl flex items-center gap-3">
-                    <FiAlertCircle className="w-5 h-5 text-red-600" />
-                    <span className="text-red-700 font-medium">
-                      Upload failed. Please try again.
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Excel Format Guide */}
-              <div>
-                <h4 className="font-semibold text-gray-800 flex items-center gap-2 mb-4">
-                  <FiFileText className="w-4 h-4 text-indigo-600" />
-                  Excel Format Guide
-                </h4>
-                <p className="text-sm text-gray-500 mb-4">
-                  Your Excel file should have the following columns. Required fields are marked with <span className="text-red-500">*</span>
-                </p>
-
-                {/* Format Table */}
-                <div className="overflow-x-auto w-full">
-  <div className="flex gap-3 min-w-max">
-    {excelColumns.map((col) => (
-      <code
-        key={col.column}
-        className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded text-xs font-mono whitespace-nowrap"
-      >
-        {col.column}
-      </code>
-    ))}
-  </div>
-</div>
-              
-
-                {/* Notes */}
-                <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                  <h5 className="font-medium text-amber-800 flex items-center gap-2 mb-2">
-                    <FiAlertCircle className="w-4 h-4" />
-                    Important Notes
-                  </h5>
-                  <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
-                    <li>The first row should contain column headers exactly as shown above</li>
-                    <li>Date format should be YYYY-MM-DD (e.g., 2024-12-25)</li>
-                    <li>Priority values should be: low, medium, or high</li>
-                    <li>Customer type should be one of: Retail, Wholesale, Distributor, Corporate, Government</li>
-                    <li>Empty optional fields can be left blank</li>
-                    <li>Maximum 500 records per upload</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex flex-col-reverse sm:flex-row gap-3 p-4 sm:p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
-              <button
-                onClick={closeBulkModal}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium text-sm transition-all w-full sm:w-auto"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBulkUpload}
-                disabled={!bulkFile || bulkUploadStatus === "uploading"}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-medium text-sm shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-              >
-                {bulkUploadStatus === "uploading" ? (
-                  <>
-                    <FiLoader className="w-4 h-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <FiUpload className="w-4 h-4" />
-                    Upload & Import
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 }
