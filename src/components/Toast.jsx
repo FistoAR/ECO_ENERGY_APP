@@ -1,21 +1,43 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { FiCheck, FiX, FiAlertCircle, FiInfo } from 'react-icons/fi'
 
 export const Toast = ({ message = "Success!", type = "success", duration = 3000, onClose }) => {
   const [isExiting, setIsExiting] = useState(false)
+  const timerRef = useRef(null)
+  const onCloseRef = useRef(onClose)
+
+  // Keep onClose ref updated
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsExiting(true)
-      setTimeout(onClose, 300) // Wait for exit animation
-    }, duration)
-    return () => clearTimeout(timer)
-  }, [duration, onClose])
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+    }
 
-  const handleClose = () => {
+    // Set the timer only once on mount
+    timerRef.current = setTimeout(() => {
+      setIsExiting(true)
+      setTimeout(() => onCloseRef.current?.(), 300)
+    }, duration)
+
+    // Cleanup on unmount
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+    }
+  }, [duration]) // Only depend on duration, not onClose
+
+  const handleClose = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+    }
     setIsExiting(true)
-    setTimeout(onClose, 300)
-  }
+    setTimeout(() => onCloseRef.current?.(), 300)
+  }, [])
 
   const getTypeStyles = () => {
     switch (type) {
@@ -61,27 +83,22 @@ export const Toast = ({ message = "Success!", type = "success", duration = 3000,
           ? 'opacity-0 translate-x-full sm:translate-x-full' 
           : 'opacity-100 translate-x-0'
         }
-        /* Mobile: bottom center */
         bottom-4 left-4 right-4
-        /* Tablet+: top right */
         sm:bottom-auto sm:top-20 sm:left-auto sm:right-4 sm:max-w-sm
       `}
     >
       <div className={`bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 shadow-2xl border border-gray-100 w-full ring-2 ${ring}`}>
         <div className="flex items-start gap-3 sm:gap-4">
-          {/* Icon */}
           <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg text-white ${icon}`}>
             <IconComponent className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           
-          {/* Message */}
           <div className="flex-1 min-w-0 py-0.5 sm:py-1">
             <p className="font-semibold text-gray-900 text-sm sm:text-base lg:text-lg leading-tight break-words">
               {message}
             </p>
           </div>
           
-          {/* Close Button */}
           <button
             onClick={handleClose}
             className="p-1.5 sm:p-2 -m-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg sm:rounded-xl transition-colors flex-shrink-0"
@@ -91,7 +108,6 @@ export const Toast = ({ message = "Success!", type = "success", duration = 3000,
           </button>
         </div>
         
-        {/* Progress Bar */}
         <div className="mt-3 sm:mt-4 h-1 bg-gray-100 rounded-full overflow-hidden">
           <div 
             className={`h-full rounded-full ${
@@ -110,44 +126,41 @@ export const Toast = ({ message = "Success!", type = "success", duration = 3000,
   )
 }
 
-// Toast Hook
+// Toast Hook - Memoized to prevent unnecessary re-renders
 export const useToast = () => {
   const [toasts, setToasts] = useState([])
 
-  const showToast = (message, type = 'success', duration = 3000) => {
+  const showToast = useCallback((message, type = 'success', duration = 3000) => {
     const id = Date.now() + Math.random()
     setToasts(prev => [...prev, { id, message, type, duration }])
     return id
-  }
+  }, [])
 
-  const hideToast = (id) => {
+  const hideToast = useCallback((id) => {
     setToasts(prev => prev.filter(toast => toast.id !== id))
-  }
+  }, [])
 
   return { showToast, hideToast, toasts }
 }
 
-// Toast Container Component (for multiple toasts)
+// Toast Container Component
 export const ToastContainer = ({ toasts, hideToast }) => {
   return (
     <div className="fixed z-50 pointer-events-none
-      /* Mobile: bottom stack */
       bottom-0 left-0 right-0 p-4 space-y-2
-      /* Tablet+: top right stack */
       sm:bottom-auto sm:top-16 sm:left-auto sm:right-0 sm:p-4 sm:space-y-3 sm:max-w-sm sm:w-full
     ">
-      {toasts.map((toast, index) => (
+      {toasts.map((toast) => (
         <div 
           key={toast.id} 
           className="pointer-events-auto"
-          style={{
-            // Stagger animation delay for multiple toasts
-            animationDelay: `${index * 100}ms`
-          }}
         >
           <ToastItem
-            {...toast}
-            onClose={() => hideToast(toast.id)}
+            id={toast.id}
+            message={toast.message}
+            type={toast.type}
+            duration={toast.duration}
+            onClose={hideToast}
           />
         </div>
       ))}
@@ -155,32 +168,48 @@ export const ToastContainer = ({ toasts, hideToast }) => {
   )
 }
 
-// Individual Toast Item (for container use)
-const ToastItem = ({ message, type = "success", duration = 4000, onClose }) => {
+// Individual Toast Item - Fixed version
+const ToastItem = ({ id, message, type = "success", duration = 4000, onClose }) => {
   const [isExiting, setIsExiting] = useState(false)
   const [progress, setProgress] = useState(100)
+  const startTimeRef = useRef(Date.now())
+  const intervalRef = useRef(null)
+  const hasClosedRef = useRef(false)
 
   useEffect(() => {
-    const startTime = Date.now()
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime
+    // Store start time on mount
+    startTimeRef.current = Date.now()
+
+    intervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTimeRef.current
       const remaining = Math.max(0, 100 - (elapsed / duration) * 100)
       setProgress(remaining)
       
-      if (remaining <= 0) {
-        clearInterval(interval)
+      if (remaining <= 0 && !hasClosedRef.current) {
+        hasClosedRef.current = true
+        clearInterval(intervalRef.current)
         setIsExiting(true)
-        setTimeout(onClose, 300)
+        setTimeout(() => onClose(id), 300)
       }
     }, 50)
 
-    return () => clearInterval(interval)
-  }, [duration, onClose])
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, []) // Empty dependency array - only run on mount
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
+    if (hasClosedRef.current) return
+    hasClosedRef.current = true
+    
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+    }
     setIsExiting(true)
-    setTimeout(onClose, 300)
-  }
+    setTimeout(() => onClose(id), 300)
+  }, [id, onClose])
 
   const getTypeStyles = () => {
     switch (type) {
@@ -234,19 +263,16 @@ const ToastItem = ({ message, type = "success", duration = 4000, onClose }) => {
     >
       <div className={`bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xl border border-gray-100 w-full ring-2 ${ring}`}>
         <div className="flex items-start gap-2.5 sm:gap-3">
-          {/* Icon */}
           <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg text-white ${icon}`}>
             <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
           
-          {/* Message */}
           <div className="flex-1 min-w-0 py-0.5">
             <p className="font-medium text-gray-900 text-xs sm:text-sm leading-snug break-words">
               {message}
             </p>
           </div>
           
-          {/* Close Button */}
           <button
             onClick={handleClose}
             className="p-1 sm:p-1.5 -m-0.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
@@ -256,7 +282,6 @@ const ToastItem = ({ message, type = "success", duration = 4000, onClose }) => {
           </button>
         </div>
         
-        {/* Progress Bar */}
         <div className="mt-2.5 sm:mt-3 h-0.5 sm:h-1 bg-gray-100 rounded-full overflow-hidden">
           <div 
             className={`h-full rounded-full transition-all duration-100 ${progressColor}`}
