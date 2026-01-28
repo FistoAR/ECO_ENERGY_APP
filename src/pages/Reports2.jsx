@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import Layout from '../components/Layout'
 import { 
   FiDownload, 
@@ -25,12 +25,196 @@ import {
   FiZoomOut,
   FiRotateCw,
   FiMaximize2,
-  FiExternalLink,
-  FiLoader
+  FiExternalLink
 } from 'react-icons/fi'
-import { customerApi, settingsApi } from '../services/api'
 
-const ITEMS_PER_PAGE = 10
+// Sample customer data (matching CustomerReg fields)
+const customersData = [
+  { 
+    id: 1, 
+    customerName: 'John Smith', 
+    companyName: 'ABC Corporation', 
+    contactNumber: '9876543210',
+    whatsappNumber: '9876543210',
+    alternateNumber: '9876543200',
+    email: 'john@abc.com',
+    address: '123 Business Park, Mumbai, Maharashtra - 400001',
+    expoName: 'Tech Expo 2024', 
+    customerType: 'Corporate',
+    productDetails: 'Product A',
+    typeOfEnquiry: 'Product Inquiry',
+    priority: 'high', 
+    referenceBy: 'Mr. Sharma',
+    remarks: 'Interested in bulk order for Q2',
+    nextFollowupDate: '2024-03-20',
+    uploads: [
+      { id: 1, name: 'business_card.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800' },
+      { id: 2, name: 'requirement.pdf', type: 'pdf', url: '#' }
+    ],
+    createdAt: '2024-03-15'
+  },
+  { 
+    id: 2, 
+    customerName: 'Jane Doe', 
+    companyName: 'XYZ Limited', 
+    contactNumber: '9876543211',
+    whatsappNumber: '9876543211',
+    alternateNumber: '',
+    email: 'jane@xyz.com',
+    address: '456 Industrial Area, Delhi - 110001',
+    expoName: 'Trade Fair 2024', 
+    customerType: 'Wholesale',
+    productDetails: 'Product B',
+    typeOfEnquiry: 'Price Quote',
+    priority: 'medium', 
+    referenceBy: 'Website',
+    remarks: 'Needs pricing for 100 units',
+    nextFollowupDate: '2024-03-22',
+    uploads: [
+      { id: 1, name: 'inquiry_photo.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800' }
+    ],
+    createdAt: '2024-03-14'
+  },
+  { 
+    id: 3, 
+    customerName: 'Mike Johnson', 
+    companyName: 'DEF Industries', 
+    contactNumber: '9876543212',
+    whatsappNumber: '9876543212',
+    alternateNumber: '9876543202',
+    email: 'mike@def.com',
+    address: '789 Tech Hub, Bangalore - 560001',
+    expoName: 'Tech Expo 2024', 
+    customerType: 'Distributor',
+    productDetails: 'Product C',
+    typeOfEnquiry: 'Service Request',
+    priority: 'low', 
+    referenceBy: 'Existing Customer',
+    remarks: 'Looking for after-sales support',
+    nextFollowupDate: '2024-03-18',
+    uploads: [],
+    createdAt: '2024-03-13'
+  },
+  { 
+    id: 4, 
+    customerName: 'Sarah Williams', 
+    companyName: 'GHI Tech Solutions', 
+    contactNumber: '9876543213',
+    whatsappNumber: '9876543213',
+    alternateNumber: '',
+    email: 'sarah@ghi.com',
+    address: '321 Software Park, Hyderabad - 500001',
+    expoName: 'Business Summit', 
+    customerType: 'Corporate',
+    productDetails: 'Product A',
+    typeOfEnquiry: 'Product Inquiry',
+    priority: 'high', 
+    referenceBy: 'LinkedIn',
+    remarks: 'Enterprise solution required',
+    nextFollowupDate: '2024-03-25',
+    uploads: [
+      { id: 1, name: 'company_profile.pdf', type: 'pdf', url: '#' }
+    ],
+    createdAt: '2024-03-12'
+  },
+  { 
+    id: 5, 
+    customerName: 'Robert Brown', 
+    companyName: 'JKL Enterprises', 
+    contactNumber: '9876543214',
+    whatsappNumber: '9876543214',
+    alternateNumber: '9876543204',
+    email: 'robert@jkl.com',
+    address: '654 Commerce Street, Chennai - 600001',
+    expoName: 'Tech Expo 2024', 
+    customerType: 'Retail',
+    productDetails: 'Product B',
+    typeOfEnquiry: 'General',
+    priority: 'medium', 
+    referenceBy: 'Trade Show',
+    remarks: 'General inquiry about product range',
+    nextFollowupDate: '2024-03-28',
+    uploads: [
+      { id: 1, name: 'product_image.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1560472355-536de3962603?w=800' },
+      { id: 2, name: 'specs.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=800' },
+      { id: 3, name: 'catalog.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1542744094-3a31f272c490?w=800' }
+    ],
+    createdAt: '2024-03-11'
+  },
+  { 
+    id: 6, 
+    customerName: 'Emily Davis', 
+    companyName: 'MNO Government Services', 
+    contactNumber: '9876543215',
+    whatsappNumber: '9876543215',
+    alternateNumber: '',
+    email: 'emily@mno.gov',
+    address: '987 Secretariat Building, Pune - 411001',
+    expoName: 'Trade Fair 2024', 
+    customerType: 'Government',
+    productDetails: 'Product D',
+    typeOfEnquiry: 'Price Quote',
+    priority: 'high', 
+    referenceBy: 'Tender Notice',
+    remarks: 'Government tender requirement',
+    nextFollowupDate: '2024-03-30',
+    uploads: [
+      { id: 1, name: 'tender_doc.pdf', type: 'pdf', url: '#' },
+      { id: 2, name: 'requirement.pdf', type: 'pdf', url: '#' }
+    ],
+    createdAt: '2024-03-10'
+  },
+  { 
+    id: 7, 
+    customerName: 'David Wilson', 
+    companyName: 'PQR Manufacturing Ltd', 
+    contactNumber: '9876543216',
+    whatsappNumber: '9876543216',
+    alternateNumber: '9876543206',
+    email: 'david@pqr.com',
+    address: '147 Factory Road, Ahmedabad - 380001',
+    expoName: 'Business Summit', 
+    customerType: 'Wholesale',
+    productDetails: 'Product A',
+    typeOfEnquiry: 'Service Request',
+    priority: 'low', 
+    referenceBy: 'Cold Call',
+    remarks: 'Maintenance contract inquiry',
+    nextFollowupDate: '2024-04-01',
+    uploads: [],
+    createdAt: '2024-03-09'
+  },
+  { 
+    id: 8, 
+    customerName: 'Lisa Anderson', 
+    companyName: 'STU Corporation', 
+    contactNumber: '9876543217',
+    whatsappNumber: '9876543217',
+    alternateNumber: '',
+    email: 'lisa@stu.com',
+    address: '258 Business Center, Kolkata - 700001',
+    expoName: 'Tech Expo 2024', 
+    customerType: 'Corporate',
+    productDetails: 'Product C',
+    typeOfEnquiry: 'Product Inquiry',
+    priority: 'medium', 
+    referenceBy: 'Email Campaign',
+    remarks: 'Demo requested for next week',
+    nextFollowupDate: '2024-04-05',
+    uploads: [
+      { id: 1, name: 'meeting_notes.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800' }
+    ],
+    createdAt: '2024-03-08'
+  },
+]
+
+const ITEMS_PER_PAGE = 5
+
+// Filter options
+const expoOptions = ['All', 'Tech Expo 2024', 'Trade Fair 2024', 'Business Summit']
+const priorityOptions = ['All', 'high', 'medium', 'low']
+const customerTypeOptions = ['All', 'Retail', 'Wholesale', 'Distributor', 'Corporate', 'Government']
+const enquiryTypeOptions = ['All', 'Product Inquiry', 'Price Quote', 'Service Request', 'General']
 
 export default function Reports() {
   const [search, setSearch] = useState('')
@@ -38,109 +222,31 @@ export default function Reports() {
     expo: 'All',
     priority: 'All',
     customerType: 'All',
-    type_of_enquiry: 'All'
+    enquiryType: 'All'
   })
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [customers, setCustomers] = useState([])
-  const [expos, setExpos] = useState([])
-  const [customerTypes, setCustomerTypes] = useState([])
-  const [enquiryTypes, setEnquiryTypes] = useState([])
-  const [stats, setStats] = useState({
-    total: 0,
-    high: 0,
-    medium: 0,
-    low: 0
-  })
-
-  // Fetch data on component mount
-  useEffect(() => {
-    fetchCustomers()
-    fetchExpos()
-  }, [])
-
-  const fetchCustomers = async () => {
-    setIsLoading(true)
-    try {
-      const response = await customerApi.getAll(1, 1000)
-      if (response.success && response.data) {
-        const customersData = response.data.data || []
-        setCustomers(customersData)
-        
-        // Extract unique customer types
-        const types = [...new Set(customersData
-          .filter(c => c.customer_type)
-          .map(c => c.customer_type)
-        )].sort()
-        setCustomerTypes(['All', ...types])
-        
-        // Calculate stats
-        updateStats(customersData)
-      }
-    } catch (error) {
-      console.error('Error fetching customers:', error)
-      alert('Failed to load customer data')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const fetchExpos = async () => {
-    try {
-      const response = await settingsApi.getAll()
-      if (response.success && response.data) {
-        // Assuming expos are stored in settings
-        // Adjust based on your actual API response structure
-        const exposData = response.data.expos || []
-        setExpos(['All', ...exposData.map(e => e.name || e.expo_name)])
-      }
-    } catch (error) {
-      console.error('Error fetching expos:', error)
-    }
-  }
-
-  const updateStats = (data) => {
-    setStats({
-      total: data.length,
-      high: data.filter(c => c.priority === 'high').length,
-      medium: data.filter(c => c.priority === 'medium').length,
-      low: data.filter(c => c.priority === 'low').length
-    })
-  }
 
   // Filter and search logic
   const filteredData = useMemo(() => {
-    let filtered = customers
-    
-    // Apply search filter
-    if (search) {
+    return customersData.filter(customer => {
       const searchLower = search.toLowerCase()
-      filtered = filtered.filter(customer => 
-        customer.customer_name?.toLowerCase().includes(searchLower) ||
-        customer.company_name?.toLowerCase().includes(searchLower) ||
-        customer.email?.toLowerCase().includes(searchLower) ||
-        customer.contact_number?.includes(search) ||
-        customer.product_category?.toLowerCase().includes(searchLower)
-      )
-    }
+      const matchesSearch = search === '' || 
+        customer.customerName.toLowerCase().includes(searchLower) ||
+        customer.companyName.toLowerCase().includes(searchLower) ||
+        customer.email.toLowerCase().includes(searchLower) ||
+        customer.contactNumber.includes(search) ||
+        customer.productDetails.toLowerCase().includes(searchLower)
 
-    // Apply other filters
-    filtered = filtered.filter(customer => {
-      const matchesExpo = filters.expo === 'All' || customer.expo_name === filters.expo
+      const matchesExpo = filters.expo === 'All' || customer.expoName === filters.expo
       const matchesPriority = filters.priority === 'All' || customer.priority === filters.priority
-      const matchesType = filters.customerType === 'All' || customer.customer_type === filters.customerType
-      const matchesEnquiry = filters.type_of_enquiry === 'All' || customer.enquiry_type_name === filters.type_of_enquiry
-      
-      return matchesExpo && matchesPriority && matchesType && matchesEnquiry
-    })
+      const matchesType = filters.customerType === 'All' || customer.customerType === filters.customerType
+      const matchesEnquiry = filters.enquiryType === 'All' || customer.typeOfEnquiry === filters.enquiryType
 
-    // Update stats for filtered data
-    updateStats(filtered)
-    
-    return filtered
-  }, [search, filters, customers])
+      return matchesSearch && matchesExpo && matchesPriority && matchesType && matchesEnquiry
+    })
+  }, [search, filters])
 
   // Pagination
   const totalItems = filteredData.length
@@ -164,7 +270,7 @@ export default function Reports() {
       expo: 'All',
       priority: 'All',
       customerType: 'All',
-      type_of_enquiry: 'All'
+      enquiryType: 'All'
     })
     setSearch('')
     setCurrentPage(1)
@@ -172,8 +278,13 @@ export default function Reports() {
 
   const activeFiltersCount = Object.values(filters).filter(v => v !== 'All').length + (search ? 1 : 0)
 
-  // Priority options
-  const priorityOptions = ['All', 'high', 'medium', 'low']
+  // Stats
+  const stats = [
+    { label: 'Total', value: filteredData.length, color: 'bg-slate-100 text-slate-700' },
+    { label: 'High Priority', value: filteredData.filter(c => c.priority === 'high').length, color: 'bg-red-50 text-red-700' },
+    { label: 'Medium', value: filteredData.filter(c => c.priority === 'medium').length, color: 'bg-amber-50 text-amber-700' },
+    { label: 'Low', value: filteredData.filter(c => c.priority === 'low').length, color: 'bg-emerald-50 text-emerald-700' },
+  ]
 
   const getPriorityBadge = (priority) => {
     const styles = {
@@ -185,71 +296,11 @@ export default function Reports() {
   }
 
   const formatDate = (dateString) => {
-    if (!dateString) return '-'
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
     })
-  }
-
-  const statsCards = [
-    { label: 'Total', value: stats.total, color: 'bg-slate-100 text-slate-700' },
-    { label: 'High Priority', value: stats.high, color: 'bg-red-50 text-red-700' },
-    { label: 'Medium', value: stats.medium, color: 'bg-amber-50 text-amber-700' },
-    { label: 'Low', value: stats.low, color: 'bg-emerald-50 text-emerald-700' },
-  ]
-
-  const exportData = () => {
-    try {
-      // Prepare data for export
-      const exportData = filteredData.map(customer => ({
-        'Customer Name': customer.customer_name || '',
-        'Company Name': customer.company_name || '',
-        'Contact Number': customer.contact_number || '',
-        'WhatsApp Number': customer.whatsapp_number || '',
-        'Email': customer.email || '',
-        'Customer Type': customer.customer_type || '',
-        'Expo': customer.expo_name || '',
-        'Product': customer.product_category ? `${customer.product_category} - ${customer.product_size || ''}`.trim() : '',
-        'Enquiry Type': customer.enquiry_type_name || '',
-        'Priority': customer.priority || '',
-        'Reference': customer.reference_by || '',
-        'Remarks': customer.remarks || '',
-        'Next Follow-up': formatDate(customer.next_followup_date),
-        'Registration Date': formatDate(customer.created_at),
-        'Address': customer.address || ''
-      }))
-
-      // Convert to CSV
-      const headers = Object.keys(exportData[0] || {})
-      const csvContent = [
-        headers.join(','),
-        ...exportData.map(row => 
-          headers.map(header => {
-            const cell = row[header] || ''
-            // Escape quotes and wrap in quotes if contains comma
-            return cell.includes(',') ? `"${cell.replace(/"/g, '""')}"` : cell
-          }).join(',')
-        )
-      ].join('\n')
-
-      // Create and trigger download
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.setAttribute('href', url)
-      link.setAttribute('download', `customers_${new Date().toISOString().split('T')[0]}.csv`)
-      link.style.visibility = 'hidden'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      
-      alert(`Exported ${exportData.length} customers successfully!`)
-    } catch (error) {
-      console.error('Export error:', error)
-      alert('Failed to export data')
-    }
   }
 
   return (
@@ -268,10 +319,7 @@ export default function Reports() {
                 <p className="text-slate-300 text-xs sm:text-sm mt-0.5">View and export customer data</p>
               </div>
             </div>
-            <button 
-              onClick={exportData}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl font-medium text-sm transition-all"
-            >
+            <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl font-medium text-sm transition-all">
               <FiDownload className="w-4 h-4" />
               Export Data
             </button>
@@ -280,7 +328,7 @@ export default function Reports() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          {statsCards.map((stat, i) => (
+          {stats.map((stat, i) => (
             <div key={i} className={`${stat.color} rounded-xl p-3 sm:p-4`}>
               <p className="text-2xl sm:text-3xl font-bold">{stat.value}</p>
               <p className="text-xs sm:text-sm opacity-75 mt-0.5">{stat.label}</p>
@@ -306,7 +354,7 @@ export default function Reports() {
                 {search && (
                   <button
                     onClick={() => handleSearchChange('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full"
                   >
                     <FiX className="w-4 h-4 text-gray-400" />
                   </button>
@@ -316,7 +364,7 @@ export default function Reports() {
               {/* Filter Toggle */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all whitespace-nowrap cursor-pointer ${
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all whitespace-nowrap ${
                   showFilters || activeFiltersCount > 0
                     ? 'bg-slate-100 text-slate-700 border-2 border-slate-300'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
@@ -340,7 +388,7 @@ export default function Reports() {
                     label="Expo"
                     value={filters.expo}
                     onChange={v => handleFilterChange('expo', v)}
-                    options={expos}
+                    options={expoOptions}
                   />
                   <FilterSelect
                     label="Priority"
@@ -353,20 +401,20 @@ export default function Reports() {
                     label="Customer Type"
                     value={filters.customerType}
                     onChange={v => handleFilterChange('customerType', v)}
-                    options={customerTypes}
+                    options={customerTypeOptions}
                   />
                   <FilterSelect
                     label="Enquiry Type"
-                    value={filters.type_of_enquiry}
-                    onChange={v => handleFilterChange('type_of_enquiry', v)}
-                    options={['All', ...(enquiryTypes || [])]}
+                    value={filters.enquiryType}
+                    onChange={v => handleFilterChange('enquiryType', v)}
+                    options={enquiryTypeOptions}
                   />
                 </div>
 
                 {activeFiltersCount > 0 && (
                   <button
                     onClick={clearFilters}
-                    className="mt-4 flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800 font-medium cursor-pointer"
+                    className="mt-4 flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800 font-medium"
                   >
                     <FiX className="w-4 h-4" />
                     Clear all filters
@@ -376,148 +424,131 @@ export default function Reports() {
             )}
           </div>
 
-          {/* Loading State */}
-          {isLoading ? (
-            <div className="py-12 text-center">
-              <FiLoader className="w-8 h-8 animate-spin text-slate-600 mx-auto mb-4" />
-              <p className="text-gray-600">Loading customer data...</p>
-            </div>
-          ) : (
-            <>
-              {/* Desktop Table View */}
-              <div className="hidden lg:block overflow-x-auto">
-                <table className="w-full border border-gray-300 border-collapse">
-                  <thead>
-                    <tr className="bg-gray-100 border-b border-gray-100">
-                      <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
-                      <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact</th>
-                      <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Company</th>
-                      <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
-                      <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Priority</th>
-                      <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Remarks</th>
-                      <th className="text-center px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {paginatedData.map((customer) => (
-                      <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 border border-gray-300">
-                          <p className="font-semibold text-gray-900">{customer.customer_name || '-'}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{customer.expo_name || '-'}</p>
-                        </td>
-                        <td className="px-6 py-4 border border-gray-300">
-                          <p className="text-sm text-gray-700">{customer.contact_number || '-'}</p>
-                          {customer.email && (
-                            <p className="text-xs text-gray-500 mt-0.5">{customer.email}</p>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 border border-gray-300">
-                          <p className="text-sm text-gray-700">{customer.company_name || '-'}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{customer.customer_type || '-'}</p>
-                        </td>
-                        <td className="px-6 py-4 border border-gray-300">
-                          <span className="text-sm text-gray-700">
-                            {customer.product_category ? `${customer.product_category} - ${customer.product_size || ''}`.trim() : '-'}
-                          </span>
-                          <p className="text-xs text-gray-500 mt-0.5">{customer.enquiry_type_name || '-'}</p>
-                        </td>
-                        <td className="px-6 py-4 border border-gray-300">
-                          <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold capitalize border ${getPriorityBadge(customer.priority)}`}>
-                            {customer.priority || '-'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 border border-gray-300">
-                          <p className="text-sm text-gray-600 max-w-[200px] truncate" title={customer.remarks}>
-                            {customer.remarks || '-'}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4 border border-gray-300 text-center">
-                          <button
-                            onClick={() => setSelectedCustomer(customer)}
-                            className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-all hover:scale-[1.15] cursor-pointer"
-                            title="View Details"
-                          >
-                            <FiEye className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Card View */}
-              <div className="lg:hidden divide-y divide-gray-100">
+          {/* Desktop Table View */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full border border-gray-300 border-collapse">
+              <thead>
+                <tr className="bg-gray-100 border-b border-gray-100">
+                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
+                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact</th>
+                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Company</th>
+                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
+                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Priority</th>
+                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Remarks</th>
+                  <th className="text-center px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
                 {paginatedData.map((customer) => (
-                  <div key={customer.id} className="p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="mb-2">
-                          <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold capitalize border ${getPriorityBadge(customer.priority)}`}>
-                            {customer.priority || '-'}
-                          </span>
-                        </div>
-                        <h4 className="font-semibold text-gray-900">{customer.customer_name || '-'}</h4>
-                        <p className="text-sm text-gray-600 mt-1">
-                          <FiPhone className="w-3.5 h-3.5 inline mr-1.5 text-gray-400" />
-                          {customer.contact_number || '-'}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1 truncate">
-                          <FiBriefcase className="w-3.5 h-3.5 inline mr-1.5 text-gray-400" />
-                          {customer.company_name || '-'}
-                        </p>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-medium">
-                            {customer.product_category ? `${customer.product_category} - ${customer.product_size || ''}`.trim() : '-'}
-                          </span>
-                        </div>
-                        {customer.remarks && (
-                          <p className="text-xs text-gray-500 mt-2 line-clamp-1">
-                            <FiFileText className="w-3 h-3 inline mr-1" />
-                            {customer.remarks}
-                          </p>
-                        )}
-                      </div>
+                  <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 border border-gray-300">
+                      <p className="font-semibold text-gray-900">{customer.customerName}</p>
+                    </td>
+                    <td className="px-6 py-4 border border-gray-300">
+                      <p className="text-sm text-gray-700">{customer.contactNumber}</p>
+                    </td>
+                    <td className="px-6 py-4 border border-gray-300">
+                      <p className="text-sm text-gray-700">{customer.companyName}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{customer.customerType}</p>
+                    </td>
+                    <td className="px-6 py-4 border border-gray-300">
+                      <span className="text-sm text-gray-700">{customer.productDetails}</span>
+                    </td>
+                    <td className="px-6 py-4 border border-gray-300">
+                      <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold capitalize border ${getPriorityBadge(customer.priority)}`}>
+                        {customer.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 border border-gray-300">
+                      <p className="text-sm text-gray-600 max-w-[200px] truncate" title={customer.remarks}>
+                        {customer.remarks || '-'}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4 border border-gray-300 text-center">
                       <button
                         onClick={() => setSelectedCustomer(customer)}
-                        className="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-all flex-shrink-0 cursor-pointer"
+                        className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-all hover:scale-[1.15] cursor-pointer"
+                        title="View Details"
                       >
-                        <FiEye className="w-5 h-5" />
+                        <FiEye className="w-4 h-4" />
                       </button>
-                    </div>
-                  </div>
+                    </td>
+                  </tr>
                 ))}
-              </div>
+              </tbody>
+            </table>
+          </div>
 
-              {/* Empty State */}
-              {filteredData.length === 0 && !isLoading && (
-                <div className="py-12 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FiUsers className="w-8 h-8 text-gray-400" />
+          {/* Mobile Card View */}
+          <div className="lg:hidden divide-y divide-gray-100">
+            {paginatedData.map((customer) => (
+              <div key={customer.id} className="p-4 hover:bg-gray-50 transition-colors">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="mb-2">
+                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold capitalize border ${getPriorityBadge(customer.priority)}`}>
+                        {customer.priority}
+                      </span>
+                    </div>
+                    <h4 className="font-semibold text-gray-900">{customer.customerName}</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      <FiPhone className="w-3.5 h-3.5 inline mr-1.5 text-gray-400" />
+                      {customer.contactNumber}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1 truncate">
+                      <FiBriefcase className="w-3.5 h-3.5 inline mr-1.5 text-gray-400" />
+                      {customer.companyName}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-medium">
+                        {customer.productDetails}
+                      </span>
+                    </div>
+                    {customer.remarks && (
+                      <p className="text-xs text-gray-500 mt-2 line-clamp-1">
+                        <FiFileText className="w-3 h-3 inline mr-1" />
+                        {customer.remarks}
+                      </p>
+                    )}
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">No customers found</h3>
-                  <p className="text-gray-500 text-sm mb-4">Try adjusting your search or filter criteria</p>
                   <button
-                    onClick={clearFilters}
-                    className="text-slate-600 hover:text-slate-800 font-medium text-sm cursor-pointer"
+                    onClick={() => setSelectedCustomer(customer)}
+                    className="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-all flex-shrink-0"
                   >
-                    Clear all filters
+                    <FiEye className="w-5 h-5" />
                   </button>
                 </div>
-              )}
+              </div>
+            ))}
+          </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalItems={totalItems}
-                  startIndex={startIndex}
-                  endIndex={endIndex}
-                  onPageChange={setCurrentPage}
-                />
-              )}
-            </>
+          {/* Empty State */}
+          {filteredData.length === 0 && (
+            <div className="py-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiUsers className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">No customers found</h3>
+              <p className="text-gray-500 text-sm mb-4">Try adjusting your search or filter criteria</p>
+              <button
+                onClick={clearFilters}
+                className="text-slate-600 hover:text-slate-800 font-medium text-sm"
+              >
+                Clear all filters
+              </button>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              onPageChange={setCurrentPage}
+            />
           )}
         </div>
       </div>
@@ -542,7 +573,7 @@ const FilterSelect = ({ label, value, onChange, options, capitalize = false }) =
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
-      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white cursor-pointer"
+      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white"
     >
       {options.map(opt => (
         <option key={opt} value={opt}>
@@ -567,7 +598,7 @@ const Pagination = ({ currentPage, totalPages, totalItems, startIndex, endIndex,
         <button
           onClick={() => onPageChange(p => Math.max(1, p - 1))}
           disabled={currentPage === 1}
-          className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+          className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
             currentPage === 1
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
               : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -593,7 +624,7 @@ const Pagination = ({ currentPage, totalPages, totalItems, startIndex, endIndex,
               <button
                 key={pageNum}
                 onClick={() => onPageChange(pageNum)}
-                className={`w-9 h-9 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
                   currentPage === pageNum
                     ? 'bg-slate-700 text-white'
                     : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -608,7 +639,7 @@ const Pagination = ({ currentPage, totalPages, totalItems, startIndex, endIndex,
         <button
           onClick={() => onPageChange(p => Math.min(totalPages, p + 1))}
           disabled={currentPage === totalPages}
-          className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+          className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
             currentPage === totalPages
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
               : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -627,16 +658,15 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
   const [viewingAttachment, setViewingAttachment] = useState(null)
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0)
 
-  const imageAttachments = customer.attachments?.filter(f => f.file_type?.startsWith('image/')) || []
+  const imageAttachments = customer.uploads?.filter(f => f.type === 'image') || []
 
   const openAttachment = (file, index) => {
-    if (file.file_type?.startsWith('image/')) {
+    if (file.type === 'image') {
       setViewingAttachment(file)
       setCurrentAttachmentIndex(index)
     } else {
-      // For non-image files, construct full URL
-      const fileUrl = `https://www.fist-o.com/eco_energy/uploads/${file.file_path}`
-      window.open(fileUrl, '_blank')
+      // For non-image files, open in new tab or trigger download
+      window.open(file.url, '_blank')
     }
   }
 
@@ -646,32 +676,6 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
       setCurrentAttachmentIndex(newIndex)
       setViewingAttachment(imageAttachments[newIndex])
     }
-  }
-
-  const handleDownload = async (file) => {
-    try {
-      const fileUrl = `https://www.fist-o.com/eco_energy/uploads/${file.file_path}`
-      const response = await fetch(fileUrl)
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = file.original_name || file.file_name
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      // Fallback: open in new tab
-      const fileUrl = `https://www.fist-o.com/eco_energy/uploads/${file.file_path}`
-      window.open(fileUrl, '_blank')
-    }
-  }
-
-  const getFileIcon = (fileType) => {
-    if (fileType?.startsWith('image/')) return FiImage
-    if (fileType === 'application/pdf') return FiFile
-    return FiFile
   }
 
   return (
@@ -688,8 +692,8 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
                     {customer.priority} Priority
                   </span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold truncate">{customer.customer_name || '-'}</h3>
-                <p className="text-slate-300 text-sm mt-0.5 truncate">{customer.company_name || '-'}</p>
+                <h3 className="text-lg sm:text-xl font-bold truncate">{customer.customerName}</h3>
+                <p className="text-slate-300 text-sm mt-0.5 truncate">{customer.companyName}</p>
               </div>
               <button
                 onClick={onClose}
@@ -710,10 +714,10 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
                 Contact Information
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <DetailItem icon={FiPhone} label="Contact Number" value={customer.contact_number || '-'} />
-                <DetailItem icon={FiMessageSquare} label="WhatsApp" value={customer.whatsapp_number || '-'} />
-                <DetailItem icon={FiPhone} label="Alternate Number" value={customer.alternate_number || '-'} />
-                <DetailItem icon={FiMail} label="Email" value={customer.email || '-'} />
+                <DetailItem icon={FiPhone} label="Contact Number" value={customer.contactNumber} />
+                <DetailItem icon={FiMessageSquare} label="WhatsApp" value={customer.whatsappNumber || '-'} />
+                <DetailItem icon={FiPhone} label="Alternate Number" value={customer.alternateNumber || '-'} />
+                <DetailItem icon={FiMail} label="Email" value={customer.email} />
               </div>
             </div>
 
@@ -733,10 +737,10 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
                 Company Details
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <DetailItem icon={FiBriefcase} label="Company Name" value={customer.company_name || '-'} />
-                <DetailItem icon={FiUsers} label="Customer Type" value={customer.customer_type || '-'} />
-                <DetailItem icon={FiUser} label="Reference By" value={customer.reference_by || '-'} />
-                <DetailItem icon={FiCalendar} label="Expo" value={customer.expo_name || '-'} />
+                <DetailItem icon={FiBriefcase} label="Company Name" value={customer.companyName} />
+                <DetailItem icon={FiUsers} label="Customer Type" value={customer.customerType} />
+                <DetailItem icon={FiUser} label="Reference By" value={customer.referenceBy || '-'} />
+                <DetailItem icon={FiCalendar} label="Expo" value={customer.expoName} />
               </div>
             </div>
 
@@ -747,14 +751,9 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
                 Enquiry Details
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <DetailItem 
-                  icon={FiPackage} 
-                  label="Product Details" 
-                  value={customer.product_category ? `${customer.product_category} - ${customer.product_size || ''}`.trim() : '-'} 
-                />
-                <DetailItem icon={FiFlag} label="Type of Enquiry" value={customer.enquiry_type_name || '-'} />
-                <DetailItem icon={FiCalendar} label="Next Follow-up" value={formatDate(customer.next_followup_date)} />
-                <DetailItem icon={FiCalendar} label="Registration Date" value={formatDate(customer.created_at)} />
+                <DetailItem icon={FiPackage} label="Product Details" value={customer.productDetails} />
+                <DetailItem icon={FiFlag} label="Type of Enquiry" value={customer.typeOfEnquiry} />
+                <DetailItem icon={FiCalendar} label="Next Follow-up" value={formatDate(customer.nextFollowupDate)} />
               </div>
             </div>
 
@@ -770,63 +769,48 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
             )}
 
             {/* Attachments */}
-            {customer.attachments && customer.attachments.length > 0 && (
+            {customer.uploads && customer.uploads.length > 0 && (
               <div className='mb-6'>
                 <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
                   <FiImage className="w-4 h-4 text-slate-600" />
-                  Attachments ({customer.attachments.length})
+                  Attachments ({customer.uploads.length})
                 </h4>
                 <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 gap-3">
-                  {customer.attachments.map((file, index) => {
-                    const FileIcon = getFileIcon(file.file_type)
-                    const isImage = file.file_type?.startsWith('image/')
-                    const fileUrl = `https://www.fist-o.com/eco_energy/uploads/${file.file_path}`
-                    
-                    return (
-                      <div 
-                        key={file.id} 
-                        className="relative group cursor-pointer"
-                        onClick={() => openAttachment(file, imageAttachments.indexOf(file))}
-                      >
-                        {isImage ? (
-                          <div className="aspect-square rounded-xl overflow-hidden border border-gray-200 relative">
-                            <img 
-                              src={fileUrl} 
-                              alt={file.original_name || file.file_name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                              onError={(e) => {
-                                e.target.onerror = null
-                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlYmViZWIiLz48cGF0aCBkPSJNNjUgNDVINTVWNTVINjVWNjVINDUiIHN0cm9rZT0iI2JjYmNiYyIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+'
-                              }}
-                            />
-                            {/* Hover Overlay */}
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
-                              <div className="opacity-0 group-hover:opacity-100 transition-all flex items-center gap-2">
-                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-                                  <FiMaximize2 className="w-5 h-5 text-gray-700" />
-                                </div>
+                  {customer.uploads.map((file, index) => (
+                    <div 
+                      key={file.id} 
+                      className="relative group cursor-pointer"
+                      onClick={() => openAttachment(file, imageAttachments.indexOf(file))}
+                    >
+                      {file.type === 'image' ? (
+                        <div className="aspect-square rounded-xl overflow-hidden border border-gray-200 relative">
+                          <img 
+                            src={file.url} 
+                            alt={file.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                          {/* Hover Overlay */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-all flex items-center gap-2">
+                              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                <FiMaximize2 className="w-5 h-5 text-gray-700" />
                               </div>
                             </div>
                           </div>
-                        ) : (
-                          <div className="aspect-square rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-3 hover:bg-gray-100 transition-colors">
-                            <FileIcon className="w-8 h-8 text-gray-400 mb-2" />
-                            <span className="text-xs text-gray-500 text-center truncate w-full">
-                              {file.original_name || file.file_name}
-                            </span>
-                            <div className="mt-2 flex items-center gap-1 text-xs text-slate-600">
-                              <FiExternalLink className="w-3 h-3" />
-                              Open
-                            </div>
-                          </div>
-                        )}
-                        <p className="text-xs text-gray-500 mt-1.5 truncate">{file.original_name || file.file_name}</p>
-                        <div className="text-xs text-gray-400">
-                          {Math.round((file.file_size || 0) / 1024)} KB
                         </div>
-                      </div>
-                    )
-                  })}
+                      ) : (
+                        <div className="aspect-square rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-3 hover:bg-gray-100 transition-colors">
+                          <FiFile className="w-8 h-8 text-gray-400 mb-2" />
+                          <span className="text-xs text-gray-500 text-center truncate w-full">{file.name}</span>
+                          <div className="mt-2 flex items-center gap-1 text-xs text-slate-600">
+                            <FiExternalLink className="w-3 h-3" />
+                            Open
+                          </div>
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1.5 truncate">{file.name}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -854,7 +838,6 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
           currentIndex={currentAttachmentIndex}
           onClose={() => setViewingAttachment(null)}
           onNavigate={navigateAttachment}
-          onDownload={handleDownload}
         />
       )}
     </>
@@ -862,7 +845,7 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
 }
 
 // Full Screen Attachment Viewer Component
-const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDownload }) => {
+const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) => {
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
 
@@ -874,7 +857,23 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
     setRotation(0)
   }
 
-  const fileUrl = `https://www.fist-o.com/eco_energy/uploads/${file.file_path}`
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(file.url)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = file.name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      // Fallback: open in new tab
+      window.open(file.url, '_blank')
+    }
+  }
 
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') onClose()
@@ -883,7 +882,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
   }
 
   // Add keyboard event listener
-  useEffect(() => {
+  useState(() => {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
@@ -897,7 +896,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
       <div className="flex items-center justify-between p-3 sm:p-4 bg-black/50">
         <div className="flex items-center gap-3 min-w-0">
           <div className="text-white text-sm sm:text-base font-medium truncate max-w-[150px] sm:max-w-[300px]">
-            {file.original_name || file.file_name}
+            {file.name}
           </div>
           {files.length > 1 && (
             <span className="text-white/60 text-sm">
@@ -912,7 +911,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
           <button
             onClick={handleZoomOut}
             disabled={zoom <= 0.5}
-            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             title="Zoom Out"
           >
             <FiZoomOut className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -923,7 +922,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
           <button
             onClick={handleZoomIn}
             disabled={zoom >= 3}
-            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             title="Zoom In"
           >
             <FiZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -934,7 +933,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
           {/* Rotate */}
           <button
             onClick={handleRotate}
-            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all cursor-pointer"
+            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
             title="Rotate"
           >
             <FiRotateCw className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -943,7 +942,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
           {/* Reset */}
           <button
             onClick={handleReset}
-            className="hidden sm:flex p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all cursor-pointer"
+            className="hidden sm:flex p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
             title="Reset"
           >
             <FiMaximize2 className="w-5 h-5" />
@@ -953,8 +952,8 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
 
           {/* Download */}
           <button
-            onClick={() => onDownload(file)}
-            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all cursor-pointer"
+            onClick={handleDownload}
+            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
             title="Download"
           >
             <FiDownload className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -963,7 +962,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
           {/* Close */}
           <button
             onClick={onClose}
-            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all ml-1 sm:ml-2 cursor-pointer"
+            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all ml-1 sm:ml-2"
             title="Close"
           >
             <FiX className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -979,14 +978,14 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
             <button
               onClick={() => onNavigate(-1)}
               disabled={currentIndex === 0}
-              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10 cursor-pointer"
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10"
             >
               <FiChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             <button
               onClick={() => onNavigate(1)}
               disabled={currentIndex === files.length - 1}
-              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10 cursor-pointer"
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10"
             >
               <FiChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
@@ -1001,8 +1000,8 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
           }}
         >
           <img
-            src={fileUrl}
-            alt={file.original_name || file.file_name}
+            src={file.url}
+            alt={file.name}
             className="max-w-none transition-transform duration-200"
             style={{
               transform: `scale(${zoom}) rotate(${rotation}deg)`,
@@ -1010,10 +1009,6 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
               maxHeight: zoom === 1 ? '100%' : 'none'
             }}
             draggable={false}
-            onError={(e) => {
-              e.target.onerror = null
-              e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiMyMDI0MjkiLz48cGF0aCBkPSJNNjUgNDVINTVWNTVINjVWNjVINDUiIHN0cm9rZT0iIzhjOWFhYiIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+'
-            }}
           />
         </div>
       </div>
@@ -1022,33 +1017,25 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
       {files.length > 1 && (
         <div className="bg-black/50 p-2 sm:p-3">
           <div className="flex gap-2 justify-center overflow-x-auto pb-1">
-            {files.map((f, index) => {
-              const thumbUrl = `https://www.fist-o.com/eco_energy/uploads/${f.file_path}`
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => {
-                    onNavigate(index - currentIndex);
-                    console.log("Thumb url: ", thumbUrl);
-                  }}
-                  className={`w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all cursor-pointer ${
-                    index === currentIndex 
-                      ? 'border-white opacity-100' 
-                      : 'border-transparent opacity-50 hover:opacity-75'
-                  }`}
-                >
-                  <img
-                    src={thumbUrl}
-                    alt={f.original_name || f.file_name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.onerror = null
-                      e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiMyMDI0MjkiLz48cGF0aCBkPSJNNjUgNDVINTVWNTVINjVWNjVINDUiIHN0cm9rZT0iIzhjOWFhYiIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+'
-                    }}
-                  />
-                </button>
-              )
-            })}
+            {files.map((f, index) => (
+              <button
+                key={f.id}
+                onClick={() => {
+                  onNavigate(index - currentIndex)
+                }}
+                className={`w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${
+                  index === currentIndex 
+                    ? 'border-white opacity-100' 
+                    : 'border-transparent opacity-50 hover:opacity-75'
+                }`}
+              >
+                <img
+                  src={f.url}
+                  alt={f.name}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -1056,8 +1043,8 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDo
       {/* Mobile Download Button */}
       <div className="sm:hidden p-4 bg-black/50">
         <button
-          onClick={() => onDownload(file)}
-          className="w-full py-3 bg-white text-gray-900 rounded-xl font-medium text-sm flex items-center justify-center gap-2 cursor-pointer"
+          onClick={handleDownload}
+          className="w-full py-3 bg-white text-gray-900 rounded-xl font-medium text-sm flex items-center justify-center gap-2"
         >
           <FiDownload className="w-4 h-4" />
           Download Image

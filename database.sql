@@ -129,3 +129,64 @@ CREATE TABLE IF NOT EXISTS customer_attachments (
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- employee management
+CREATE TABLE IF NOT EXISTS employees (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    phone VARCHAR(20) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    role ENUM('Admin', 'Employee') DEFAULT 'Employee',
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_email (email),
+    INDEX idx_username (username),
+    INDEX idx_department (department),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Departments table (optional - for dynamic departments)
+CREATE TABLE IF NOT EXISTS departments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Insert default departments
+INSERT INTO departments (name, status) VALUES
+('Sales', 'active'),
+('Marketing', 'active'),
+('Production', 'active'),
+('HR', 'active'),
+('IT', 'active'),
+('Finance', 'active'),
+('Operations', 'active')
+ON DUPLICATE KEY UPDATE name = name;
+
+-- Insert sample employees (passwords are hashed version of 'pass123')
+INSERT INTO employees (name, email, phone, username, password, department, role, status) VALUES
+('John Doe', 'john@example.com', '9876543210', 'johndoe', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Sales', 'Admin', 'active'),
+('Jane Smith', 'jane@example.com', '9876543211', 'janesmith', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Marketing', 'Employee', 'active'),
+('Mike Johnson', 'mike@example.com', '9876543212', 'mikejohnson', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Production', 'Employee', 'inactive'),
+('Sarah Williams', 'sarah@example.com', '9876543213', 'sarahwilliams', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'HR', 'Admin', 'active'),
+('Robert Brown', 'robert@example.com', '9876543214', 'robertbrown', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', 'Employee', 'active')
+ON DUPLICATE KEY UPDATE email = email;
+
+
+-- login auth tokens:
+-- Auth tokens table for session management
+CREATE TABLE IF NOT EXISTS auth_tokens (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES employees(id) ON DELETE CASCADE,
+    INDEX idx_token (token),
+    INDEX idx_expires (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

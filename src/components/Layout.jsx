@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { FiHome, FiUser, FiLogOut, FiBell, FiChevronDown, FiMenu } from 'react-icons/fi'
 import ecoLogo from '../assets/eco-energy-logo.svg'
 
+
 export default function Layout({ title, children }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -70,7 +71,7 @@ export default function Layout({ title, children }) {
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900 text-sm">{user?.name}</p>
-                          <p className="text-xs text-gray-500">{user?.email}</p>
+                          <p className="text-xs text-gray-500">{user?.role} • {user?.department}</p>
                         </div>
                       </div>
                     </div>

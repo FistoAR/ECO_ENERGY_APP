@@ -29,6 +29,7 @@ import {
   settingsApi,
   productApi,
   entryTypeApi,
+  whatsappApi,  // Add this
 } from "../services/api";
 
 const initialForm = {
@@ -188,6 +189,8 @@ export default function CustomerReg() {
   const [entryTypes, setEntryTypes] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [whatsappTemplate, setWhatsappTemplate] = useState(null);
+
 
   const fileRef = useRef();
   const cameraRef = useRef();
@@ -268,6 +271,23 @@ export default function CustomerReg() {
       alert(`Error loading data: ${error.message}`);
     } finally {
       setIsLoading(false);
+      console.log("Fetching WhatsApp template...");
+      try {
+        const whatsappResponse = await whatsappApi.getAll(1, 1);
+        console.log("WhatsApp response:", whatsappResponse);
+        
+        if (whatsappResponse.success && whatsappResponse.data) {
+          const messages = whatsappResponse.data.data || [];
+          if (messages.length > 0) {
+            // Get the latest/first message template
+            setWhatsappTemplate(messages[0]);
+            console.log("WhatsApp template set:", messages[0].title);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching WhatsApp template:", error);
+        // Non-critical error, don't block the form
+      }
     }
   };
 
@@ -363,6 +383,72 @@ export default function CustomerReg() {
     return results.every((result) => result === true);
   };
 
+  // Send WhatsApp message after registration
+  const sendWhatsAppMessage = useCallback((customerData) => {
+    if (!whatsappTemplate || !whatsappTemplate.message) {
+      console.log("No WhatsApp template available");
+      return;
+    }
+
+    // Get the phone number (prefer WhatsApp number, fallback to contact number)
+    let phoneNumber = customerData.whatsapp_number;
+    
+    if (!phoneNumber) {
+      console.log("No phone number available for WhatsApp");
+      return;
+    }
+
+    // Clean the phone number (remove spaces, dashes, etc.)
+    phoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+    
+    // Add country code if not present (assuming India +91)
+    if (!phoneNumber.startsWith('+')) {
+      if (phoneNumber.startsWith('0')) {
+        phoneNumber = phoneNumber.substring(1);
+      }
+      if (!phoneNumber.startsWith('91') && phoneNumber.length === 10) {
+        phoneNumber = '91' + phoneNumber;
+      }
+    } else {
+      phoneNumber = phoneNumber.substring(1); // Remove the + for wa.me
+    }
+
+    // Replace placeholders in the message template
+    let message = whatsappTemplate.message;
+    
+    // Common placeholders replacement
+    const replacements = {
+      '{customer_name}': customerData.customer_name || '',
+      '{name}': customerData.customer_name || '',
+      '{company_name}': customerData.company_name || '',
+      '{company}': customerData.company_name || '',
+      '{expo_name}': currentExpo?.name || currentExpo?.expo_name || '',
+      '{expo}': currentExpo?.name || currentExpo?.expo_name || '',
+      '{product}': selectedCategory || '',
+      '{product_category}': selectedCategory || '',
+      '{date}': new Date().toLocaleDateString('en-IN'),
+      '{contact_number}': customerData.contact_number || '',
+      '{email}': customerData.email || '',
+    };
+
+    // Replace all placeholders
+    Object.entries(replacements).forEach(([placeholder, value]) => {
+      message = message.replace(new RegExp(placeholder, 'gi'), value);
+    });
+
+    // Encode the message for URL
+    const fullMessage = `Dear ${customerData.customer_name || ""}\n${message}`;
+const encodedMessage = encodeURIComponent(fullMessage);
+    
+    // Create WhatsApp URL
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+    
+    console.log("Opening WhatsApp:", whatsappUrl);
+    
+    // Open WhatsApp in new tab/window
+    window.open(whatsappUrl, '_blank');
+  }, [whatsappTemplate, currentExpo, selectedCategory]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -421,6 +507,20 @@ export default function CustomerReg() {
         }
 
         alert("Customer registered successfully!");
+
+        const customerDataForWhatsApp = {
+          ...form,
+          customer_name: form.customer_name.trim(),
+          contact_number: form.contact_number.trim(),
+          whatsapp_number: form.whatsapp_number?.trim() || '',
+          company_name: form.company_name?.trim() || '',
+          email: form.email?.trim() || '',
+        };
+
+        // Send WhatsApp message
+        sendWhatsAppMessage(customerDataForWhatsApp);
+
+
         handleReset();
       } else {
         alert(`Failed to register customer: ${response.message}`);
@@ -585,8 +685,14 @@ export default function CustomerReg() {
     );
   }
 
+  function handleBack() {
+    window.history.back();
+  }
+
   return (
     <Layout title="Customer Registration">
+         <button onClick={handleBack} className="text-md font-semibold text-white cursor-pointer py-2 px-3 my-2 bg-gray-700 rounded hover:bg-black transition-all flex items-center justify-center">← Back</button>
+
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6">

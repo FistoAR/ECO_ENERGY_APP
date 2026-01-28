@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useExpo } from '../context/ExpoContext';
+import { customerApi, employeeApi, expoApi } from '../services/api';
 import { 
   FiDatabase, 
   FiUserPlus, 
@@ -16,13 +17,15 @@ import {
   FiClock,
   FiLoader,
   FiRefreshCw,
-  FiAlertCircle
+  FiAlertCircle,
+  FiTrendingUp,
+  FiTrendingDown
 } from 'react-icons/fi';
 
 const menuItems = [
   { 
     title: 'Master Page', 
-    desc: 'Manage Expo, Products, Entry Types', 
+    desc: 'Manage Expo, Products, Enquiry Types & Whatsapp Message', 
     icon: FiDatabase, 
     path: '/master', 
     color: 'from-indigo-500 to-indigo-600'
@@ -50,35 +53,105 @@ const menuItems = [
   },
 ];
 
-const stats = [
-  { 
-    label: 'Total Customers', 
-    value: '1,234', 
-    icon: FiUsers,
-    change: '+12%',
-    changeType: 'positive'
-  },
-  { 
-    label: 'Active Expos', 
-    value: '8', 
-    icon: FiCalendar,
-    change: '+2',
-    changeType: 'positive'
-  },
-  { 
-    label: 'Employees', 
-    value: '24', 
-    icon: FiActivity,
-    change: '0',
-    changeType: 'neutral'
-  },
-];
-
 export default function Home() {
   const navigate = useNavigate();
   const { currentExpo, allExpos, loading, error, selectExpo, refresh } = useExpo();
   const [showExpoDropdown, setShowExpoDropdown] = useState(false);
   const [isChangingExpo, setIsChangingExpo] = useState(false);
+  
+  // Stats state
+  const [stats, setStats] = useState({
+    customers: { total: 0, loading: true, error: null },
+    employees: { total: 0, active: 0, loading: true, error: null },
+    expos: { total: 0, active: 0, loading: true, error: null }
+  });
+  const [isRefreshingStats, setIsRefreshingStats] = useState(false);
+
+  // Fetch all stats
+  const fetchStats = useCallback(async () => {
+    setIsRefreshingStats(true);
+    
+    // Fetch customers count
+    try {
+      const customerResponse = await customerApi.getAll(1, 1);
+      if (customerResponse.success && customerResponse.data?.pagination) {
+        setStats(prev => ({
+          ...prev,
+          customers: {
+            total: customerResponse.data.pagination.total_items || 0,
+            loading: false,
+            error: null
+          }
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+      setStats(prev => ({
+        ...prev,
+        customers: { ...prev.customers, loading: false, error: 'Failed to load' }
+      }));
+    }
+
+    // Fetch employees count
+    try {
+      const employeeResponse = await employeeApi.getAll(1, 1);
+      if (employeeResponse.success && employeeResponse.data) {
+        setStats(prev => ({
+          ...prev,
+          employees: {
+            total: employeeResponse.data.pagination?.total_items || 0,
+            active: employeeResponse.data.stats?.active || 0,
+            loading: false,
+            error: null
+          }
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching employees:', err);
+      setStats(prev => ({
+        ...prev,
+        employees: { ...prev.employees, loading: false, error: 'Failed to load' }
+      }));
+    }
+
+    // Fetch expos count
+    try {
+      const expoResponse = await expoApi.getAll(1, 1000);
+      if (expoResponse.success && expoResponse.data) {
+        const expos = expoResponse.data.data || [];
+        const activeExpos = expos.filter(e => e.status === 'active').length;
+        setStats(prev => ({
+          ...prev,
+          expos: {
+            total: expoResponse.data.pagination?.total_items || expos.length,
+            active: activeExpos,
+            loading: false,
+            error: null
+          }
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching expos:', err);
+      setStats(prev => ({
+        ...prev,
+        expos: { ...prev.expos, loading: false, error: 'Failed to load' }
+      }));
+    }
+
+    setIsRefreshingStats(false);
+  }, []);
+
+  // Fetch stats on mount
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  // Refresh stats when expo changes
+  useEffect(() => {
+    if (currentExpo) {
+      fetchStats();
+    }
+  }, [currentExpo?.id, fetchStats]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -102,6 +175,16 @@ export default function Home() {
     return `${formatDate(sorted[0])} - ${formatDate(sorted[sorted.length - 1])}`;
   };
 
+  const formatNumber = (num) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toLocaleString();
+  };
+
   const handleExpoSelect = async (expo) => {
     if (expo.id === currentExpo?.id) {
       setShowExpoDropdown(false);
@@ -122,6 +205,47 @@ export default function Home() {
       setIsChangingExpo(false);
     }
   };
+
+  const handleRefreshAll = () => {
+    refresh();
+    fetchStats();
+  };
+
+  // Stats cards configuration
+  const statsCards = [
+    { 
+      label: 'Total Customers', 
+      value: stats.customers.total,
+      loading: stats.customers.loading,
+      error: stats.customers.error,
+      icon: FiUsers,
+      color: 'from-blue-500 to-blue-600',
+      bgColor: 'from-blue-100 to-blue-50',
+      path: '/reports'
+    },
+    { 
+      label: 'Active Expos', 
+      value: stats.expos.active,
+      subValue: `of ${stats.expos.total} total`,
+      loading: stats.expos.loading,
+      error: stats.expos.error,
+      icon: FiCalendar,
+      color: 'from-green-500 to-green-600',
+      bgColor: 'from-green-100 to-green-50',
+      path: '/master'
+    },
+    { 
+      label: 'Employees', 
+      value: stats.employees.total,
+      subValue: `${stats.employees.active} active`,
+      loading: stats.employees.loading,
+      error: stats.employees.error,
+      icon: FiActivity,
+      color: 'from-purple-500 to-purple-600',
+      bgColor: 'from-purple-100 to-purple-50',
+      path: '/employees'
+    },
+  ];
 
   // Show loading state
   if (loading && !currentExpo) {
@@ -147,7 +271,7 @@ export default function Home() {
             <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
             <p className="text-red-700 text-sm flex-1">{error}</p>
             <button 
-              onClick={refresh}
+              onClick={handleRefreshAll}
               className="text-red-600 hover:text-red-800 p-1"
             >
               <FiRefreshCw className="w-4 h-4" />
@@ -156,7 +280,7 @@ export default function Home() {
         )}
 
         {/* Current Expo Selector - Featured Card */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white relative">
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white relative ">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-1/2 translate-x-1/2"></div>
@@ -319,32 +443,76 @@ export default function Home() {
 
         {/* Welcome Section - Mobile Only */}
         <div className="sm:hidden bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white">
-          <h2 className="text-lg font-bold">Welcome back! 👋</h2>
-          <p className="text-green-100 text-sm mt-1">Here's what's happening today</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold">Welcome back! 👋</h2>
+              <p className="text-green-100 text-sm mt-1">Here's what's happening today</p>
+            </div>
+            <button
+              onClick={fetchStats}
+              disabled={isRefreshingStats}
+              className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-all"
+            >
+              <FiRefreshCw className={`w-4 h-4 ${isRefreshingStats ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-          {stats.map((stat, i) => (
+          {statsCards.map((stat, i) => (
             <div 
               key={i} 
-              className={`group bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-green-200 ${
+              onClick={() => navigate(stat.path)}
+              className={`group bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-green-200 cursor-pointer ${
                 i === 2 ? 'xs:col-span-2 lg:col-span-1' : ''
               }`}
             >
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="p-2.5 sm:p-3 lg:p-4 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl sm:rounded-2xl group-hover:scale-105 transition-all duration-300 flex-shrink-0">
-                  <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-green-600" />
+                <div className={`p-2.5 sm:p-3 lg:p-4 bg-gradient-to-br ${stat.bgColor} rounded-xl sm:rounded-2xl group-hover:scale-105 transition-all duration-300 flex-shrink-0`}>
+                  <stat.icon className={`w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`} style={{ color: stat.color.includes('blue') ? '#3b82f6' : stat.color.includes('green') ? '#22c55e' : '#a855f7' }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
+                  {stat.loading ? (
+                    <div className="flex items-center gap-2">
+                      <FiLoader className="w-5 h-5 text-gray-400 animate-spin" />
+                      <span className="text-gray-400 text-sm">Loading...</span>
+                    </div>
+                  ) : stat.error ? (
+                    <div className="flex items-center gap-2">
+                      <FiAlertCircle className="w-5 h-5 text-red-400" />
+                      <span className="text-red-400 text-sm">{stat.error}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+                          {formatNumber(stat.value)}
+                        </p>
+                      </div>
+                      {stat.subValue && (
+                        <p className="text-xs text-gray-500 mt-0.5">{stat.subValue}</p>
+                      )}
+                    </>
+                  )}
                   <p className="text-sm sm:text-base lg:text-lg text-gray-600 font-medium truncate">{stat.label}</p>
                 </div>
+                <FiArrowRight className="w-5 h-5 text-gray-300 group-hover:text-green-500 group-hover:translate-x-1 transition-all" />
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Refresh Stats Button - Desktop */}
+        <div className="hidden sm:flex justify-end">
+          <button
+            onClick={fetchStats}
+            disabled={isRefreshingStats}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all disabled:opacity-50"
+          >
+            <FiRefreshCw className={`w-4 h-4 ${isRefreshingStats ? 'animate-spin' : ''}`} />
+            {isRefreshingStats ? 'Refreshing...' : 'Refresh Stats'}
+          </button>
         </div>
 
         {/* Quick Access Section */}

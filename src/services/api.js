@@ -36,8 +36,11 @@ async function fetchApi(endpoint, options = {}) {
       throw new Error('Invalid JSON response');
     }
 
+    // Return the data even if not ok - so we can access errors
     if (!response.ok) {
-      throw {
+      // Return the full response including errors
+      return {
+        success: false,
         status: response.status,
         message: data.message || 'Request failed',
         errors: data.errors || null,
@@ -47,12 +50,25 @@ async function fetchApi(endpoint, options = {}) {
     return data;
   } catch (error) {
     console.error('API Error:', error);
+    // If it's already our formatted error, return it
+    if (error.status && error.message) {
+      return {
+        success: false,
+        status: error.status,
+        message: error.message,
+        errors: error.errors || null,
+      };
+    }
+    // Otherwise throw a new error
     throw {
-      status: error.status || 500,
+      success: false,
+      status: 500,
       message: error.message || 'Network error',
+      errors: null,
     };
   }
 }
+
 
 // ============================================
 // EXPO API
@@ -181,6 +197,101 @@ export const settingsApi = {
     body: JSON.stringify({ key, value }) 
   }),
 };
+// ============================================
+// EMPLOYEE API
+// ============================================
+export const employeeApi = {
+  getAll: async (page = 1, limit = 10, search = '', filters = {}) => {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      search: search || '',
+      department: filters.department || 'All',
+      role: filters.role || 'All',
+      status: filters.status || 'All'
+    });
+    return fetchApi(`/employees?${params}`);
+  },
+  
+  getById: async (id) => fetchApi(`/employees/${id}`),
+  
+  create: async (data) => fetchApi('/employees', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  
+  update: async (id, data) => fetchApi(`/employees/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  }),
+  
+  delete: async (id) => fetchApi(`/employees/${id}`, {
+    method: 'DELETE'
+  }),
+  
+  toggleStatus: async (id) => fetchApi(`/employees/${id}`, {
+    method: 'PATCH'
+  }),
+};
+
+// ============================================
+// DEPARTMENT API
+// ============================================
+export const departmentApi = {
+  getAll: async () => fetchApi('/departments'),
+  
+  create: async (name) => fetchApi('/departments', {
+    method: 'POST',
+    body: JSON.stringify({ name })
+  }),
+  
+  delete: async (id) => fetchApi(`/departments/${id}`, {
+    method: 'DELETE'
+  }),
+};
+
+// ============================================
+// AUTH API
+// ============================================
+export const authApi = {
+  login: async (username, password) => {
+    return fetchApi('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password })
+    });
+  },
+  
+  logout: async () => {
+    const token = localStorage.getItem('authToken');
+    return fetchApi('/auth/logout', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  
+  me: async () => {
+    const token = localStorage.getItem('authToken');
+    return fetchApi('/auth/me', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+  
+  changePassword: async (currentPassword, newPassword) => {
+    const token = localStorage.getItem('authToken');
+    return fetchApi('/auth/change-password', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+    });
+  }
+};
 
 export default {
   expo: expoApi,
@@ -189,4 +300,7 @@ export default {
   whatsapp: whatsappApi,
   customer: customerApi,
   settings: settingsApi,
+  employee: employeeApi,
+  department: departmentApi,
+  auth: authApi,
 };

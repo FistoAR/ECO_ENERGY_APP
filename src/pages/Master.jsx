@@ -343,6 +343,10 @@ export default function Master() {
     }
   };
 
+  function handleBack() {
+    window.history.back();
+  }
+
   return (
     <Layout title="Master Page">
       {/* Toast Notifications */}
@@ -360,6 +364,8 @@ export default function Master() {
       />
 
       {/* Tabs */}
+      <button onClick={handleBack} className="text-md font-semibold text-white cursor-pointer py-2 px-3 my-2 bg-gray-700 rounded hover:bg-black transition-all flex items-center justify-center">← Back</button>
+
       <div className="flex gap-1 sm:gap-2 mb-4 sm:mb-8 overflow-x-auto pb-2 -mx-2 px-2 sm:-mx-4 sm:px-4 scrollbar-hide">
         {tabs.map((tab) => (
           <button

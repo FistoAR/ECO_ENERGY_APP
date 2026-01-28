@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import Layout from '../components/Layout'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 import { 
   FiDownload, 
   FiSearch, 
@@ -25,196 +27,16 @@ import {
   FiZoomOut,
   FiRotateCw,
   FiMaximize2,
-  FiExternalLink
+  FiExternalLink,
+  FiLoader,
+  FiEdit2,
+  FiTrash2,
+  FiSave,
+  FiAlertTriangle
 } from 'react-icons/fi'
-
-// Sample customer data (matching CustomerReg fields)
-const customersData = [
-  { 
-    id: 1, 
-    customerName: 'John Smith', 
-    companyName: 'ABC Corporation', 
-    contactNumber: '9876543210',
-    whatsappNumber: '9876543210',
-    alternateNumber: '9876543200',
-    email: 'john@abc.com',
-    address: '123 Business Park, Mumbai, Maharashtra - 400001',
-    expoName: 'Tech Expo 2024', 
-    customerType: 'Corporate',
-    productDetails: 'Product A',
-    typeOfEnquiry: 'Product Inquiry',
-    priority: 'high', 
-    referenceBy: 'Mr. Sharma',
-    remarks: 'Interested in bulk order for Q2',
-    nextFollowupDate: '2024-03-20',
-    uploads: [
-      { id: 1, name: 'business_card.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800' },
-      { id: 2, name: 'requirement.pdf', type: 'pdf', url: '#' }
-    ],
-    createdAt: '2024-03-15'
-  },
-  { 
-    id: 2, 
-    customerName: 'Jane Doe', 
-    companyName: 'XYZ Limited', 
-    contactNumber: '9876543211',
-    whatsappNumber: '9876543211',
-    alternateNumber: '',
-    email: 'jane@xyz.com',
-    address: '456 Industrial Area, Delhi - 110001',
-    expoName: 'Trade Fair 2024', 
-    customerType: 'Wholesale',
-    productDetails: 'Product B',
-    typeOfEnquiry: 'Price Quote',
-    priority: 'medium', 
-    referenceBy: 'Website',
-    remarks: 'Needs pricing for 100 units',
-    nextFollowupDate: '2024-03-22',
-    uploads: [
-      { id: 1, name: 'inquiry_photo.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800' }
-    ],
-    createdAt: '2024-03-14'
-  },
-  { 
-    id: 3, 
-    customerName: 'Mike Johnson', 
-    companyName: 'DEF Industries', 
-    contactNumber: '9876543212',
-    whatsappNumber: '9876543212',
-    alternateNumber: '9876543202',
-    email: 'mike@def.com',
-    address: '789 Tech Hub, Bangalore - 560001',
-    expoName: 'Tech Expo 2024', 
-    customerType: 'Distributor',
-    productDetails: 'Product C',
-    typeOfEnquiry: 'Service Request',
-    priority: 'low', 
-    referenceBy: 'Existing Customer',
-    remarks: 'Looking for after-sales support',
-    nextFollowupDate: '2024-03-18',
-    uploads: [],
-    createdAt: '2024-03-13'
-  },
-  { 
-    id: 4, 
-    customerName: 'Sarah Williams', 
-    companyName: 'GHI Tech Solutions', 
-    contactNumber: '9876543213',
-    whatsappNumber: '9876543213',
-    alternateNumber: '',
-    email: 'sarah@ghi.com',
-    address: '321 Software Park, Hyderabad - 500001',
-    expoName: 'Business Summit', 
-    customerType: 'Corporate',
-    productDetails: 'Product A',
-    typeOfEnquiry: 'Product Inquiry',
-    priority: 'high', 
-    referenceBy: 'LinkedIn',
-    remarks: 'Enterprise solution required',
-    nextFollowupDate: '2024-03-25',
-    uploads: [
-      { id: 1, name: 'company_profile.pdf', type: 'pdf', url: '#' }
-    ],
-    createdAt: '2024-03-12'
-  },
-  { 
-    id: 5, 
-    customerName: 'Robert Brown', 
-    companyName: 'JKL Enterprises', 
-    contactNumber: '9876543214',
-    whatsappNumber: '9876543214',
-    alternateNumber: '9876543204',
-    email: 'robert@jkl.com',
-    address: '654 Commerce Street, Chennai - 600001',
-    expoName: 'Tech Expo 2024', 
-    customerType: 'Retail',
-    productDetails: 'Product B',
-    typeOfEnquiry: 'General',
-    priority: 'medium', 
-    referenceBy: 'Trade Show',
-    remarks: 'General inquiry about product range',
-    nextFollowupDate: '2024-03-28',
-    uploads: [
-      { id: 1, name: 'product_image.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1560472355-536de3962603?w=800' },
-      { id: 2, name: 'specs.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=800' },
-      { id: 3, name: 'catalog.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1542744094-3a31f272c490?w=800' }
-    ],
-    createdAt: '2024-03-11'
-  },
-  { 
-    id: 6, 
-    customerName: 'Emily Davis', 
-    companyName: 'MNO Government Services', 
-    contactNumber: '9876543215',
-    whatsappNumber: '9876543215',
-    alternateNumber: '',
-    email: 'emily@mno.gov',
-    address: '987 Secretariat Building, Pune - 411001',
-    expoName: 'Trade Fair 2024', 
-    customerType: 'Government',
-    productDetails: 'Product D',
-    typeOfEnquiry: 'Price Quote',
-    priority: 'high', 
-    referenceBy: 'Tender Notice',
-    remarks: 'Government tender requirement',
-    nextFollowupDate: '2024-03-30',
-    uploads: [
-      { id: 1, name: 'tender_doc.pdf', type: 'pdf', url: '#' },
-      { id: 2, name: 'requirement.pdf', type: 'pdf', url: '#' }
-    ],
-    createdAt: '2024-03-10'
-  },
-  { 
-    id: 7, 
-    customerName: 'David Wilson', 
-    companyName: 'PQR Manufacturing Ltd', 
-    contactNumber: '9876543216',
-    whatsappNumber: '9876543216',
-    alternateNumber: '9876543206',
-    email: 'david@pqr.com',
-    address: '147 Factory Road, Ahmedabad - 380001',
-    expoName: 'Business Summit', 
-    customerType: 'Wholesale',
-    productDetails: 'Product A',
-    typeOfEnquiry: 'Service Request',
-    priority: 'low', 
-    referenceBy: 'Cold Call',
-    remarks: 'Maintenance contract inquiry',
-    nextFollowupDate: '2024-04-01',
-    uploads: [],
-    createdAt: '2024-03-09'
-  },
-  { 
-    id: 8, 
-    customerName: 'Lisa Anderson', 
-    companyName: 'STU Corporation', 
-    contactNumber: '9876543217',
-    whatsappNumber: '9876543217',
-    alternateNumber: '',
-    email: 'lisa@stu.com',
-    address: '258 Business Center, Kolkata - 700001',
-    expoName: 'Tech Expo 2024', 
-    customerType: 'Corporate',
-    productDetails: 'Product C',
-    typeOfEnquiry: 'Product Inquiry',
-    priority: 'medium', 
-    referenceBy: 'Email Campaign',
-    remarks: 'Demo requested for next week',
-    nextFollowupDate: '2024-04-05',
-    uploads: [
-      { id: 1, name: 'meeting_notes.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800' }
-    ],
-    createdAt: '2024-03-08'
-  },
-]
+import { customerApi, settingsApi, productApi, entryTypeApi } from '../services/api'
 
 const ITEMS_PER_PAGE = 5
-
-// Filter options
-const expoOptions = ['All', 'Tech Expo 2024', 'Trade Fair 2024', 'Business Summit']
-const priorityOptions = ['All', 'high', 'medium', 'low']
-const customerTypeOptions = ['All', 'Retail', 'Wholesale', 'Distributor', 'Corporate', 'Government']
-const enquiryTypeOptions = ['All', 'Product Inquiry', 'Price Quote', 'Service Request', 'General']
 
 export default function Reports() {
   const [search, setSearch] = useState('')
@@ -222,31 +44,146 @@ export default function Reports() {
     expo: 'All',
     priority: 'All',
     customerType: 'All',
-    enquiryType: 'All'
+    type_of_enquiry: 'All'
   })
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [editingCustomer, setEditingCustomer] = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [customers, setCustomers] = useState([])
+  const [expos, setExpos] = useState([])
+  const [customerTypes, setCustomerTypes] = useState([])
+  const [enquiryTypes, setEnquiryTypes] = useState([])
+  const [products, setProducts] = useState([])
+  const [productCategories, setProductCategories] = useState([])
+  const [stats, setStats] = useState({
+    total: 0,
+    high: 0,
+    medium: 0,
+    low: 0
+  })
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchCustomers()
+    fetchExpos()
+    fetchProducts()
+    fetchEntryTypes()
+  }, [])
+
+  const fetchCustomers = async () => {
+    setIsLoading(true)
+    try {
+      const response = await customerApi.getAll(1, 1000)
+      if (response.success && response.data) {
+        const customersData = response.data.data || []
+        setCustomers(customersData)
+        
+        // Extract unique customer types
+        const types = [...new Set(customersData
+          .filter(c => c.customer_type)
+          .map(c => c.customer_type)
+        )].sort()
+        setCustomerTypes(['All', ...types])
+        
+        // Calculate stats
+        updateStats(customersData)
+      }
+    } catch (error) {
+      console.error('Error fetching customers:', error)
+      alert('Failed to load customer data')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchExpos = async () => {
+    try {
+      const response = await settingsApi.getAll()
+      if (response.success && response.data) {
+        const exposData = response.data.expos || []
+        setExpos(['All', ...exposData.map(e => e.name || e.expo_name)])
+      }
+    } catch (error) {
+      console.error('Error fetching expos:', error)
+    }
+  }
+
+  const fetchProducts = async () => {
+    try {
+      const response = await productApi.getAll(1, 1000)
+      if (response.success && response.data) {
+        const productsData = response.data.data || []
+        setProducts(productsData)
+        
+        // Extract unique categories
+        const categories = [...new Set(
+          productsData
+            .filter(p => p.category && p.status === 'active')
+            .map(p => p.category)
+        )].sort()
+        setProductCategories(categories)
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error)
+    }
+  }
+
+  const fetchEntryTypes = async () => {
+    try {
+      const response = await entryTypeApi.getAll(1, 100)
+      if (response.success && response.data) {
+        const types = response.data.data || []
+        setEnquiryTypes(types)
+      }
+    } catch (error) {
+      console.error('Error fetching entry types:', error)
+    }
+  }
+
+  const updateStats = (data) => {
+    setStats({
+      total: data.length,
+      high: data.filter(c => c.priority === 'high').length,
+      medium: data.filter(c => c.priority === 'medium').length,
+      low: data.filter(c => c.priority === 'low').length
+    })
+  }
 
   // Filter and search logic
   const filteredData = useMemo(() => {
-    return customersData.filter(customer => {
+    let filtered = customers
+    
+    // Apply search filter
+    if (search) {
       const searchLower = search.toLowerCase()
-      const matchesSearch = search === '' || 
-        customer.customerName.toLowerCase().includes(searchLower) ||
-        customer.companyName.toLowerCase().includes(searchLower) ||
-        customer.email.toLowerCase().includes(searchLower) ||
-        customer.contactNumber.includes(search) ||
-        customer.productDetails.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(customer => 
+        customer.customer_name?.toLowerCase().includes(searchLower) ||
+        customer.company_name?.toLowerCase().includes(searchLower) ||
+        customer.email?.toLowerCase().includes(searchLower) ||
+        customer.contact_number?.includes(search) ||
+        customer.product_category?.toLowerCase().includes(searchLower)
+      )
+    }
 
-      const matchesExpo = filters.expo === 'All' || customer.expoName === filters.expo
+    // Apply other filters
+    filtered = filtered.filter(customer => {
+      const matchesExpo = filters.expo === 'All' || customer.expo_name === filters.expo
       const matchesPriority = filters.priority === 'All' || customer.priority === filters.priority
-      const matchesType = filters.customerType === 'All' || customer.customerType === filters.customerType
-      const matchesEnquiry = filters.enquiryType === 'All' || customer.typeOfEnquiry === filters.enquiryType
-
-      return matchesSearch && matchesExpo && matchesPriority && matchesType && matchesEnquiry
+      const matchesType = filters.customerType === 'All' || customer.customer_type === filters.customerType
+      const matchesEnquiry = filters.type_of_enquiry === 'All' || customer.enquiry_type_name === filters.type_of_enquiry
+      
+      return matchesExpo && matchesPriority && matchesType && matchesEnquiry
     })
-  }, [search, filters])
+
+    // Update stats for filtered data
+    updateStats(filtered)
+    
+    return filtered
+  }, [search, filters, customers])
 
   // Pagination
   const totalItems = filteredData.length
@@ -270,7 +207,7 @@ export default function Reports() {
       expo: 'All',
       priority: 'All',
       customerType: 'All',
-      enquiryType: 'All'
+      type_of_enquiry: 'All'
     })
     setSearch('')
     setCurrentPage(1)
@@ -278,13 +215,8 @@ export default function Reports() {
 
   const activeFiltersCount = Object.values(filters).filter(v => v !== 'All').length + (search ? 1 : 0)
 
-  // Stats
-  const stats = [
-    { label: 'Total', value: filteredData.length, color: 'bg-slate-100 text-slate-700' },
-    { label: 'High Priority', value: filteredData.filter(c => c.priority === 'high').length, color: 'bg-red-50 text-red-700' },
-    { label: 'Medium', value: filteredData.filter(c => c.priority === 'medium').length, color: 'bg-amber-50 text-amber-700' },
-    { label: 'Low', value: filteredData.filter(c => c.priority === 'low').length, color: 'bg-emerald-50 text-emerald-700' },
-  ]
+  // Priority options
+  const priorityOptions = ['All', 'high', 'medium', 'low']
 
   const getPriorityBadge = (priority) => {
     const styles = {
@@ -296,6 +228,7 @@ export default function Reports() {
   }
 
   const formatDate = (dateString) => {
+    if (!dateString) return '-'
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
@@ -303,8 +236,102 @@ export default function Reports() {
     })
   }
 
+  const statsCards = [
+    { label: 'Total', value: stats.total, color: 'bg-slate-100 text-slate-700' },
+    { label: 'High Priority', value: stats.high, color: 'bg-red-50 text-red-700' },
+    { label: 'Medium', value: stats.medium, color: 'bg-amber-50 text-amber-700' },
+    { label: 'Low', value: stats.low, color: 'bg-emerald-50 text-emerald-700' },
+  ]
+
+  // Delete customer handler
+  const handleDeleteCustomer = async (customerId) => {
+    setIsDeleting(true)
+    try {
+      const response = await customerApi.delete(customerId)
+      if (response.success) {
+        // Remove from local state
+        setCustomers(prev => prev.filter(c => c.id !== customerId))
+        setDeleteConfirm(null)
+        alert('Customer deleted successfully!')
+      } else {
+        alert(`Failed to delete customer: ${response.message}`)
+      }
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert(`Error: ${error.message || 'Failed to delete customer'}`)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // Handle edit success
+  const handleEditSuccess = (updatedCustomer) => {
+    setCustomers(prev => 
+      prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c)
+    )
+    setEditingCustomer(null)
+    alert('Customer updated successfully!')
+  }
+
+  const exportData = () => {
+    try {
+      // Prepare data for export
+      const exportData = filteredData.map(customer => ({
+        'Customer Name': customer.customer_name || '',
+        'Company Name': customer.company_name || '',
+        'Contact Number': customer.contact_number || '',
+        'WhatsApp Number': customer.whatsapp_number || '',
+        'Email': customer.email || '',
+        'Customer Type': customer.customer_type || '',
+        'Expo': customer.expo_name || '',
+        'Product': customer.product_category ? `${customer.product_category} - ${customer.product_size || ''}`.trim() : '',
+        'Enquiry Type': customer.enquiry_type_name || '',
+        'Priority': customer.priority || '',
+        'Reference': customer.reference_by || '',
+        'Remarks': customer.remarks || '',
+        'Next Follow-up': formatDate(customer.next_followup_date),
+        'Registration Date': formatDate(customer.created_at),
+        'Address': customer.address || ''
+      }))
+
+      // Convert to CSV
+      const headers = Object.keys(exportData[0] || {})
+      const csvContent = [
+        headers.join(','),
+        ...exportData.map(row => 
+          headers.map(header => {
+            const cell = row[header] || ''
+            // Escape quotes and wrap in quotes if contains comma
+            return cell.includes(',') ? `"${cell.replace(/"/g, '""')}"` : cell
+          }).join(',')
+        )
+      ].join('\n')
+
+      // Create and trigger download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.setAttribute('href', url)
+      link.setAttribute('download', `customers_${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      alert(`Exported ${exportData.length} customers successfully!`)
+    } catch (error) {
+      console.error('Export error:', error)
+      alert('Failed to export data')
+    }
+  }
+
+  function handleBack() {
+    window.history.back();
+  }
+
   return (
     <Layout title="Customer Reports">
+         <button onClick={handleBack} className="text-md font-semibold text-white cursor-pointer py-2 px-3 my-2 bg-gray-700 rounded hover:bg-black transition-all flex items-center justify-center">← Back</button>
       <div className="space-y-4 sm:space-y-6">
         
         {/* Header Card */}
@@ -316,10 +343,13 @@ export default function Reports() {
               </div>
               <div>
                 <h2 className="text-lg sm:text-xl font-bold">Customer Reports</h2>
-                <p className="text-slate-300 text-xs sm:text-sm mt-0.5">View and export customer data</p>
+                <p className="text-slate-300 text-xs sm:text-sm mt-0.5">View, edit and export customer data</p>
               </div>
             </div>
-            <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl font-medium text-sm transition-all">
+            <button 
+              onClick={exportData}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl font-medium text-sm transition-all"
+            >
               <FiDownload className="w-4 h-4" />
               Export Data
             </button>
@@ -328,7 +358,7 @@ export default function Reports() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          {stats.map((stat, i) => (
+          {statsCards.map((stat, i) => (
             <div key={i} className={`${stat.color} rounded-xl p-3 sm:p-4`}>
               <p className="text-2xl sm:text-3xl font-bold">{stat.value}</p>
               <p className="text-xs sm:text-sm opacity-75 mt-0.5">{stat.label}</p>
@@ -354,7 +384,7 @@ export default function Reports() {
                 {search && (
                   <button
                     onClick={() => handleSearchChange('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full cursor-pointer"
                   >
                     <FiX className="w-4 h-4 text-gray-400" />
                   </button>
@@ -364,7 +394,7 @@ export default function Reports() {
               {/* Filter Toggle */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all whitespace-nowrap ${
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all whitespace-nowrap cursor-pointer ${
                   showFilters || activeFiltersCount > 0
                     ? 'bg-slate-100 text-slate-700 border-2 border-slate-300'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
@@ -383,13 +413,13 @@ export default function Reports() {
             {/* Filter Dropdowns */}
             {showFilters && (
               <div className="pt-4 border-t border-gray-100">
-                <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  <FilterSelect
+                <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                  {/* <FilterSelect
                     label="Expo"
                     value={filters.expo}
                     onChange={v => handleFilterChange('expo', v)}
-                    options={expoOptions}
-                  />
+                    options={expos}
+                  /> */}
                   <FilterSelect
                     label="Priority"
                     value={filters.priority}
@@ -401,20 +431,20 @@ export default function Reports() {
                     label="Customer Type"
                     value={filters.customerType}
                     onChange={v => handleFilterChange('customerType', v)}
-                    options={customerTypeOptions}
+                    options={customerTypes}
                   />
                   <FilterSelect
                     label="Enquiry Type"
-                    value={filters.enquiryType}
-                    onChange={v => handleFilterChange('enquiryType', v)}
-                    options={enquiryTypeOptions}
+                    value={filters.type_of_enquiry}
+                    onChange={v => handleFilterChange('type_of_enquiry', v)}
+                    options={['All', ...enquiryTypes.map(t => t.name)]}
                   />
                 </div>
 
                 {activeFiltersCount > 0 && (
                   <button
                     onClick={clearFilters}
-                    className="mt-4 flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800 font-medium"
+                    className="mt-4 flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800 font-medium cursor-pointer"
                   >
                     <FiX className="w-4 h-4" />
                     Clear all filters
@@ -424,131 +454,185 @@ export default function Reports() {
             )}
           </div>
 
-          {/* Desktop Table View */}
-          <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full border border-gray-300 border-collapse">
-              <thead>
-                <tr className="bg-gray-100 border-b border-gray-100">
-                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
-                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact</th>
-                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Company</th>
-                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
-                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Priority</th>
-                  <th className="text-left px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Remarks</th>
-                  <th className="text-center px-6 py-4 border border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {paginatedData.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 border border-gray-300">
-                      <p className="font-semibold text-gray-900">{customer.customerName}</p>
-                    </td>
-                    <td className="px-6 py-4 border border-gray-300">
-                      <p className="text-sm text-gray-700">{customer.contactNumber}</p>
-                    </td>
-                    <td className="px-6 py-4 border border-gray-300">
-                      <p className="text-sm text-gray-700">{customer.companyName}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{customer.customerType}</p>
-                    </td>
-                    <td className="px-6 py-4 border border-gray-300">
-                      <span className="text-sm text-gray-700">{customer.productDetails}</span>
-                    </td>
-                    <td className="px-6 py-4 border border-gray-300">
-                      <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold capitalize border ${getPriorityBadge(customer.priority)}`}>
-                        {customer.priority}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 border border-gray-300">
-                      <p className="text-sm text-gray-600 max-w-[200px] truncate" title={customer.remarks}>
-                        {customer.remarks || '-'}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 border border-gray-300 text-center">
-                      <button
-                        onClick={() => setSelectedCustomer(customer)}
-                        className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-all hover:scale-[1.15] cursor-pointer"
-                        title="View Details"
-                      >
-                        <FiEye className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="py-12 text-center">
+              <FiLoader className="w-8 h-8 animate-spin text-slate-600 mx-auto mb-4" />
+              <p className="text-gray-600">Loading customer data...</p>
+            </div>
+          ) : (
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full border border-gray-300 border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 border-b border-gray-100">
+                      <th className="text-left px-6 py-4 border border-gray-300 text-sm font-semibold text-gray-700 uppercase tracking-wider">S.No.</th>
+                      <th className="text-left px-6 py-4 border border-gray-300 text-sm font-semibold text-gray-700 uppercase tracking-wider">Customer</th>
+                      <th className="text-left px-6 py-4 border border-gray-300 text-sm font-semibold text-gray-700 uppercase tracking-wider">Contact</th>
+                      <th className="text-left px-6 py-4 border border-gray-300 text-sm font-semibold text-gray-700 uppercase tracking-wider">Company</th>
+                      <th className="text-left px-6 py-4 border border-gray-300 text-sm font-semibold text-gray-700 uppercase tracking-wider">Product</th>
+                      <th className="text-left px-6 py-4 border border-gray-300 text-sm font-semibold text-gray-700 uppercase tracking-wider">Priority</th>
+                      <th className="text-left px-6 py-4 border border-gray-300 text-sm font-semibold text-gray-700 uppercase tracking-wider">Remarks</th>
+                      <th className="text-center px-6 py-4 border border-gray-300 text-sm font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {paginatedData.map((customer, index) => (
+                      <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 border border-gray-300">
+                          {index + 1}
+                        </td>
+                        <td className="px-6 py-4 border border-gray-300">
+                          <p className="font-semibold text-gray-900">{customer.customer_name || '-'}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{customer.expo_name || '-'}</p>
+                        </td>
+                        <td className="px-6 py-4 border border-gray-300">
+                          <p className="text-sm text-gray-700">{customer.contact_number || '-'}</p>
+                          {customer.email && (
+                            <p className="text-xs text-gray-500 mt-0.5">{customer.email}</p>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 border border-gray-300">
+                          <p className="text-sm text-gray-700">{customer.company_name || '-'}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{customer.customer_type || '-'}</p>
+                        </td>
+                        <td className="px-6 py-4 border border-gray-300">
+                          <span className="text-sm text-gray-700">
+                            {customer.product_category ? `${customer.product_category} - ${customer.product_size || ''}`.trim() : '-'}
+                          </span>
+                          <p className="text-xs text-gray-500 mt-0.5">{customer.enquiry_type_name || '-'}</p>
+                        </td>
+                        <td className="px-6 py-4 border border-gray-300">
+                          <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold capitalize border ${getPriorityBadge(customer.priority)}`}>
+                            {customer.priority || '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 border border-gray-300">
+                          <p className="text-sm text-gray-600 max-w-[200px] truncate" title={customer.remarks}>
+                            {customer.remarks || '-'}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4 border border-gray-300 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => setSelectedCustomer(customer)}
+                              className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-all hover:scale-[1.15] cursor-pointer"
+                              title="View Details"
+                            >
+                              <FiEye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setEditingCustomer(customer)}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all hover:scale-[1.15] cursor-pointer"
+                              title="Edit Customer"
+                            >
+                              <FiEdit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(customer)}
+                              className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all hover:scale-[1.15] cursor-pointer"
+                              title="Delete Customer"
+                            >
+                              <FiTrash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Mobile Card View */}
-          <div className="lg:hidden divide-y divide-gray-100">
-            {paginatedData.map((customer) => (
-              <div key={customer.id} className="p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="mb-2">
-                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold capitalize border ${getPriorityBadge(customer.priority)}`}>
-                        {customer.priority}
-                      </span>
+              {/* Mobile Card View */}
+              <div className="lg:hidden divide-y divide-gray-100">
+                {paginatedData.map((customer) => (
+                  <div key={customer.id} className="p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="mb-2">
+                          <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold capitalize border ${getPriorityBadge(customer.priority)}`}>
+                            {customer.priority || '-'}
+                          </span>
+                        </div>
+                        <h4 className="font-semibold text-gray-900">{customer.customer_name || '-'}</h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          <FiPhone className="w-3.5 h-3.5 inline mr-1.5 text-gray-400" />
+                          {customer.contact_number || '-'}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1 truncate">
+                          <FiBriefcase className="w-3.5 h-3.5 inline mr-1.5 text-gray-400" />
+                          {customer.company_name || '-'}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-medium">
+                            {customer.product_category ? `${customer.product_category} - ${customer.product_size || ''}`.trim() : '-'}
+                          </span>
+                        </div>
+                        {customer.remarks && (
+                          <p className="text-xs text-gray-500 mt-2 line-clamp-1">
+                            <FiFileText className="w-3 h-3 inline mr-1" />
+                            {customer.remarks}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => setSelectedCustomer(customer)}
+                          className="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                          title="View"
+                        >
+                          <FiEye className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => setEditingCustomer(customer)}
+                          className="p-2.5 text-blue-600 hover:bg-blue-100 rounded-xl transition-all cursor-pointer"
+                          title="Edit"
+                        >
+                          <FiEdit2 className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(customer)}
+                          className="p-2.5 text-red-600 hover:bg-red-100 rounded-xl transition-all cursor-pointer"
+                          title="Delete"
+                        >
+                          <FiTrash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
-                    <h4 className="font-semibold text-gray-900">{customer.customerName}</h4>
-                    <p className="text-sm text-gray-600 mt-1">
-                      <FiPhone className="w-3.5 h-3.5 inline mr-1.5 text-gray-400" />
-                      {customer.contactNumber}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1 truncate">
-                      <FiBriefcase className="w-3.5 h-3.5 inline mr-1.5 text-gray-400" />
-                      {customer.companyName}
-                    </p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-medium">
-                        {customer.productDetails}
-                      </span>
-                    </div>
-                    {customer.remarks && (
-                      <p className="text-xs text-gray-500 mt-2 line-clamp-1">
-                        <FiFileText className="w-3 h-3 inline mr-1" />
-                        {customer.remarks}
-                      </p>
-                    )}
                   </div>
+                ))}
+              </div>
+
+              {/* Empty State */}
+              {filteredData.length === 0 && !isLoading && (
+                <div className="py-12 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FiUsers className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">No customers found</h3>
+                  <p className="text-gray-500 text-sm mb-4">Try adjusting your search or filter criteria</p>
                   <button
-                    onClick={() => setSelectedCustomer(customer)}
-                    className="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-all flex-shrink-0"
+                    onClick={clearFilters}
+                    className="text-slate-600 hover:text-slate-800 font-medium text-sm cursor-pointer"
                   >
-                    <FiEye className="w-5 h-5" />
+                    Clear all filters
                   </button>
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
 
-          {/* Empty State */}
-          {filteredData.length === 0 && (
-            <div className="py-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiUsers className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">No customers found</h3>
-              <p className="text-gray-500 text-sm mb-4">Try adjusting your search or filter criteria</p>
-              <button
-                onClick={clearFilters}
-                className="text-slate-600 hover:text-slate-800 font-medium text-sm"
-              >
-                Clear all filters
-              </button>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              startIndex={startIndex}
-              endIndex={endIndex}
-              onPageChange={setCurrentPage}
-            />
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  startIndex={startIndex}
+                  endIndex={endIndex}
+                  onPageChange={setCurrentPage}
+                />
+              )}
+            </>
           )}
         </div>
       </div>
@@ -558,8 +642,39 @@ export default function Reports() {
         <CustomerDetailModal
           customer={selectedCustomer}
           onClose={() => setSelectedCustomer(null)}
+          onEdit={() => {
+            setSelectedCustomer(null)
+            setEditingCustomer(selectedCustomer)
+          }}
+          onDelete={() => {
+            setSelectedCustomer(null)
+            setDeleteConfirm(selectedCustomer)
+          }}
           getPriorityBadge={getPriorityBadge}
           formatDate={formatDate}
+        />
+      )}
+
+      {/* Edit Customer Modal */}
+      {editingCustomer && (
+        <EditCustomerModal
+          customer={editingCustomer}
+          onClose={() => setEditingCustomer(null)}
+          onSuccess={handleEditSuccess}
+          products={products}
+          productCategories={productCategories}
+          entryTypes={enquiryTypes}
+          getPriorityBadge={getPriorityBadge}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <DeleteConfirmModal
+          customer={deleteConfirm}
+          onClose={() => setDeleteConfirm(null)}
+          onConfirm={() => handleDeleteCustomer(deleteConfirm.id)}
+          isDeleting={isDeleting}
         />
       )}
     </Layout>
@@ -573,7 +688,7 @@ const FilterSelect = ({ label, value, onChange, options, capitalize = false }) =
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
-      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white"
+      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-white cursor-pointer"
     >
       {options.map(opt => (
         <option key={opt} value={opt}>
@@ -598,7 +713,7 @@ const Pagination = ({ currentPage, totalPages, totalItems, startIndex, endIndex,
         <button
           onClick={() => onPageChange(p => Math.max(1, p - 1))}
           disabled={currentPage === 1}
-          className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
             currentPage === 1
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
               : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -624,7 +739,7 @@ const Pagination = ({ currentPage, totalPages, totalItems, startIndex, endIndex,
               <button
                 key={pageNum}
                 onClick={() => onPageChange(pageNum)}
-                className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
+                className={`w-9 h-9 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   currentPage === pageNum
                     ? 'bg-slate-700 text-white'
                     : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -639,7 +754,7 @@ const Pagination = ({ currentPage, totalPages, totalItems, startIndex, endIndex,
         <button
           onClick={() => onPageChange(p => Math.min(totalPages, p + 1))}
           disabled={currentPage === totalPages}
-          className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
             currentPage === totalPages
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
               : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -653,20 +768,488 @@ const Pagination = ({ currentPage, totalPages, totalItems, startIndex, endIndex,
   </div>
 )
 
+// Delete Confirmation Modal
+const DeleteConfirmModal = ({ customer, onClose, onConfirm, isDeleting }) => (
+  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl">
+      {/* Header */}
+      <div className="p-6 text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <FiAlertTriangle className="w-8 h-8 text-red-600" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Customer</h3>
+        <p className="text-gray-600">
+          Are you sure you want to delete <span className="font-semibold">{customer.customer_name}</span>? 
+          This action cannot be undone.
+        </p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3 p-6 pt-0">
+        <button
+          onClick={onClose}
+          disabled={isDeleting}
+          className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium text-sm transition-all disabled:opacity-50 cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={isDeleting}
+          className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+        >
+          {isDeleting ? (
+            <>
+              <FiLoader className="w-4 h-4 animate-spin" />
+              Deleting...
+            </>
+          ) : (
+            <>
+              <FiTrash2 className="w-4 h-4" />
+              Delete
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)
+
+// Edit Customer Modal
+const EditCustomerModal = ({ customer, onClose, onSuccess, products, productCategories, entryTypes, getPriorityBadge }) => {
+  const [form, setForm] = useState({
+    customer_name: customer.customer_name || '',
+    contact_number: customer.contact_number || '',
+    company_name: customer.company_name || '',
+    customer_type: customer.customer_type || '',
+    email: customer.email || '',
+    whatsapp_number: customer.whatsapp_number || '',
+    alternate_number: customer.alternate_number || '',
+    address: customer.address || '',
+    product_id: customer.product_id || null,
+    type_of_enquiry_id: customer.type_of_enquiry_id || null,
+    priority: customer.priority || 'medium',
+    reference_by: customer.reference_by || '',
+    remarks: customer.remarks || '',
+    next_followup_date: customer.next_followup_date ? new Date(customer.next_followup_date) : null,
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState(customer.product_category || '')
+  const [productSizes, setProductSizes] = useState([])
+
+  // Customer type options
+  const customerTypes = ['Retail', 'Wholesale', 'Distributor', 'Corporate', 'Government']
+
+  // Update product sizes when category changes
+  useEffect(() => {
+    if (selectedCategory && products.length > 0) {
+      const filteredProducts = products.filter(
+        p => p.category === selectedCategory && p.status === 'active'
+      )
+      setProductSizes(filteredProducts)
+    } else {
+      setProductSizes([])
+    }
+  }, [selectedCategory, products])
+
+  // Set initial product sizes based on customer's product
+  useEffect(() => {
+    if (customer.product_category) {
+      const filteredProducts = products.filter(
+        p => p.category === customer.product_category && p.status === 'active'
+      )
+      setProductSizes(filteredProducts)
+    }
+  }, [customer.product_category, products])
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setForm(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleCategoryChange = (e) => {
+    const category = e.target.value
+    setSelectedCategory(category)
+    setForm(prev => ({ ...prev, product_id: null }))
+  }
+
+  const handleDateChange = (date) => {
+    setForm(prev => ({ ...prev, next_followup_date: date }))
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!form.customer_name.trim()) {
+      alert('Customer name is required')
+      return
+    }
+
+    if (!form.contact_number.trim()) {
+      alert('Contact number is required')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const submitData = {
+        ...form,
+        next_followup_date: form.next_followup_date
+          ? new Date(form.next_followup_date).toISOString().split('T')[0]
+          : null,
+        customer_name: form.customer_name.trim(),
+        contact_number: form.contact_number.trim(),
+        company_name: form.company_name?.trim() || '',
+        email: form.email?.trim() || '',
+        whatsapp_number: form.whatsapp_number?.trim() || '',
+        alternate_number: form.alternate_number?.trim() || '',
+        address: form.address?.trim() || '',
+        reference_by: form.reference_by?.trim() || '',
+        remarks: form.remarks?.trim() || '',
+        customer_type: form.customer_type?.trim() || '',
+      }
+
+      const response = await customerApi.update(customer.id, submitData)
+
+      if (response.success) {
+        // Merge updated data with original customer data
+        const updatedCustomer = {
+          ...customer,
+          ...submitData,
+          // Keep category and size info for display
+          product_category: selectedCategory,
+          product_size: productSizes.find(p => p.id === parseInt(form.product_id))?.size || '',
+          enquiry_type_name: entryTypes.find(t => t.id === parseInt(form.type_of_enquiry_id))?.name || '',
+        }
+        onSuccess(updatedCustomer)
+      } else {
+        alert(`Failed to update customer: ${response.message}`)
+      }
+    } catch (error) {
+      console.error('Update error:', error)
+      alert(`Error: ${error.message || 'Failed to update customer'}`)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const inputClass = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 p-4 sm:p-6 text-white flex-shrink-0">
+          <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 sm:hidden"></div>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <FiEdit2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold">Edit Customer</h3>
+                <p className="text-blue-100 text-sm">{customer.customer_name}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-xl transition-all cursor-pointer"
+            >
+              <FiX className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+          
+          {/* Basic Information */}
+          <div>
+            <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <FiUser className="w-4 h-4 text-blue-600" />
+              Basic Information
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">
+                  Customer Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name="customer_name"
+                  value={form.customer_name}
+                  onChange={handleChange}
+                  className={inputClass}
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">
+                  Contact Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name="contact_number"
+                  value={form.contact_number}
+                  onChange={handleChange}
+                  type="tel"
+                  className={inputClass}
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">Company Name</label>
+                <input
+                  name="company_name"
+                  value={form.company_name}
+                  onChange={handleChange}
+                  className={inputClass}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">Customer Type</label>
+                <select
+                  name="customer_type"
+                  value={form.customer_type}
+                  onChange={handleChange}
+                  className={inputClass}
+                  disabled={isSubmitting}
+                >
+                  <option value="">Select Type</option>
+                  {customerTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Details */}
+          <div>
+            <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <FiPhone className="w-4 h-4 text-blue-600" />
+              Contact Details
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">Email</label>
+                <input
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  type="email"
+                  className={inputClass}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">WhatsApp Number</label>
+                <input
+                  name="whatsapp_number"
+                  value={form.whatsapp_number}
+                  onChange={handleChange}
+                  type="tel"
+                  className={inputClass}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">Alternate Number</label>
+                <input
+                  name="alternate_number"
+                  value={form.alternate_number}
+                  onChange={handleChange}
+                  type="tel"
+                  className={inputClass}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">Reference By</label>
+                <input
+                  name="reference_by"
+                  value={form.reference_by}
+                  onChange={handleChange}
+                  className={inputClass}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+            <div className="mt-4 space-y-1.5">
+              <label className="block text-xs font-medium text-gray-600">Address</label>
+              <textarea
+                name="address"
+                value={form.address}
+                onChange={handleChange}
+                rows={2}
+                className={`${inputClass} resize-none`}
+                disabled={isSubmitting}
+              />
+            </div>
+          </div>
+
+          {/* Enquiry Details */}
+          <div>
+            <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <FiPackage className="w-4 h-4 text-blue-600" />
+              Enquiry Details
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">Product Category</label>
+                <select
+                  value={selectedCategory}
+                  onChange={handleCategoryChange}
+                  className={inputClass}
+                  disabled={isSubmitting}
+                >
+                  <option value="">Select Category</option>
+                  {productCategories.map((category, index) => (
+                    <option key={`${category}-${index}`} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">Product Size</label>
+                <select
+                  name="product_id"
+                  value={form.product_id || ''}
+                  onChange={handleChange}
+                  className={inputClass}
+                  disabled={!selectedCategory || isSubmitting || productSizes.length === 0}
+                >
+                  <option value="">Select Size</option>
+                  {productSizes.map(product => (
+                    <option key={product.id} value={product.id}>
+                      {product.size || 'No size specified'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">Type of Enquiry</label>
+                <select
+                  name="type_of_enquiry_id"
+                  value={form.type_of_enquiry_id || ''}
+                  onChange={handleChange}
+                  className={inputClass}
+                  disabled={isSubmitting}
+                >
+                  <option value="">Select Type</option>
+                  {entryTypes.map(type => (
+                    <option key={type.id} value={type.id}>{type.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">Next Follow-up Date</label>
+                <DatePicker
+                  selected={form.next_followup_date}
+                  onChange={handleDateChange}
+                  className={inputClass}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Select date"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            {/* Priority */}
+            <div className="mt-4 space-y-1.5">
+              <label className="block text-xs font-medium text-gray-600">Priority</label>
+              <div className="flex gap-2">
+                {['low', 'medium', 'high'].map(p => (
+                  <label
+                    key={p}
+                    className={`flex-1 text-center py-2.5 rounded-xl cursor-pointer text-sm font-medium border-2 transition-all ${
+                      form.priority === p
+                        ? p === 'high'
+                          ? 'bg-red-100 border-red-400 text-red-700'
+                          : p === 'medium'
+                            ? 'bg-amber-100 border-amber-400 text-amber-700'
+                            : 'bg-green-100 border-green-400 text-green-700'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    } ${isSubmitting ? 'cursor-not-allowed opacity-50' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="priority"
+                      value={p}
+                      checked={form.priority === p}
+                      onChange={handleChange}
+                      className="hidden"
+                      disabled={isSubmitting}
+                    />
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Remarks */}
+            <div className="mt-4 space-y-1.5">
+              <label className="block text-xs font-medium text-gray-600">Remarks</label>
+              <textarea
+                name="remarks"
+                value={form.remarks}
+                onChange={handleChange}
+                rows={2}
+                className={`${inputClass} resize-none`}
+                disabled={isSubmitting}
+              />
+            </div>
+          </div>
+        </form>
+
+        {/* Footer */}
+        <div className="flex gap-3 p-4 sm:p-6 border-t border-gray-100 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium text-sm transition-all disabled:opacity-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            {isSubmitting ? (
+              <>
+                <FiLoader className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FiSave className="w-4 h-4" />
+                Save Changes
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Customer Detail Modal Component
-const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }) => {
+const CustomerDetailModal = ({ customer, onClose, onEdit, onDelete, getPriorityBadge, formatDate }) => {
   const [viewingAttachment, setViewingAttachment] = useState(null)
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0)
 
-  const imageAttachments = customer.uploads?.filter(f => f.type === 'image') || []
+  const imageAttachments = customer.attachments?.filter(f => f.file_type?.startsWith('image/')) || []
 
   const openAttachment = (file, index) => {
-    if (file.type === 'image') {
+    if (file.file_type?.startsWith('image/')) {
       setViewingAttachment(file)
       setCurrentAttachmentIndex(index)
     } else {
-      // For non-image files, open in new tab or trigger download
-      window.open(file.url, '_blank')
+      const fileUrl = `https://www.fist-o.com/eco_energy/${file.file_path}`
+      window.open(fileUrl, '_blank')
     }
   }
 
@@ -676,6 +1259,31 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
       setCurrentAttachmentIndex(newIndex)
       setViewingAttachment(imageAttachments[newIndex])
     }
+  }
+
+  const handleDownload = async (file) => {
+    try {
+      const fileUrl = `https://www.fist-o.com/eco_energy/${file.file_path}`
+      const response = await fetch(fileUrl)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = file.original_name || file.file_name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      const fileUrl = `https://www.fist-o.com/eco_energy/${file.file_path}`
+      window.open(fileUrl, '_blank')
+    }
+  }
+
+  const getFileIcon = (fileType) => {
+    if (fileType?.startsWith('image/')) return FiImage
+    if (fileType === 'application/pdf') return FiFile
+    return FiFile
   }
 
   return (
@@ -692,8 +1300,8 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
                     {customer.priority} Priority
                   </span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold truncate">{customer.customerName}</h3>
-                <p className="text-slate-300 text-sm mt-0.5 truncate">{customer.companyName}</p>
+                <h3 className="text-lg sm:text-xl font-bold truncate">{customer.customer_name || '-'}</h3>
+                <p className="text-slate-300 text-sm mt-0.5 truncate">{customer.company_name || '-'}</p>
               </div>
               <button
                 onClick={onClose}
@@ -714,10 +1322,10 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
                 Contact Information
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <DetailItem icon={FiPhone} label="Contact Number" value={customer.contactNumber} />
-                <DetailItem icon={FiMessageSquare} label="WhatsApp" value={customer.whatsappNumber || '-'} />
-                <DetailItem icon={FiPhone} label="Alternate Number" value={customer.alternateNumber || '-'} />
-                <DetailItem icon={FiMail} label="Email" value={customer.email} />
+                <DetailItem icon={FiPhone} label="Contact Number" value={customer.contact_number || '-'} />
+                <DetailItem icon={FiMessageSquare} label="WhatsApp" value={customer.whatsapp_number || '-'} />
+                <DetailItem icon={FiPhone} label="Alternate Number" value={customer.alternate_number || '-'} />
+                <DetailItem icon={FiMail} label="Email" value={customer.email || '-'} />
               </div>
             </div>
 
@@ -737,10 +1345,10 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
                 Company Details
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <DetailItem icon={FiBriefcase} label="Company Name" value={customer.companyName} />
-                <DetailItem icon={FiUsers} label="Customer Type" value={customer.customerType} />
-                <DetailItem icon={FiUser} label="Reference By" value={customer.referenceBy || '-'} />
-                <DetailItem icon={FiCalendar} label="Expo" value={customer.expoName} />
+                <DetailItem icon={FiBriefcase} label="Company Name" value={customer.company_name || '-'} />
+                <DetailItem icon={FiUsers} label="Customer Type" value={customer.customer_type || '-'} />
+                <DetailItem icon={FiUser} label="Reference By" value={customer.reference_by || '-'} />
+                <DetailItem icon={FiCalendar} label="Expo" value={customer.expo_name || '-'} />
               </div>
             </div>
 
@@ -751,9 +1359,14 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
                 Enquiry Details
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <DetailItem icon={FiPackage} label="Product Details" value={customer.productDetails} />
-                <DetailItem icon={FiFlag} label="Type of Enquiry" value={customer.typeOfEnquiry} />
-                <DetailItem icon={FiCalendar} label="Next Follow-up" value={formatDate(customer.nextFollowupDate)} />
+                <DetailItem 
+                  icon={FiPackage} 
+                  label="Product Details" 
+                  value={customer.product_category ? `${customer.product_category} - ${customer.product_size || ''}`.trim() : '-'} 
+                />
+                <DetailItem icon={FiFlag} label="Type of Enquiry" value={customer.enquiry_type_name || '-'} />
+                <DetailItem icon={FiCalendar} label="Next Follow-up" value={formatDate(customer.next_followup_date)} />
+                <DetailItem icon={FiCalendar} label="Registration Date" value={formatDate(customer.created_at)} />
               </div>
             </div>
 
@@ -769,48 +1382,62 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
             )}
 
             {/* Attachments */}
-            {customer.uploads && customer.uploads.length > 0 && (
+            {customer.attachments && customer.attachments.length > 0 && (
               <div className='mb-6'>
                 <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
                   <FiImage className="w-4 h-4 text-slate-600" />
-                  Attachments ({customer.uploads.length})
+                  Attachments ({customer.attachments.length})
                 </h4>
                 <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 gap-3">
-                  {customer.uploads.map((file, index) => (
-                    <div 
-                      key={file.id} 
-                      className="relative group cursor-pointer"
-                      onClick={() => openAttachment(file, imageAttachments.indexOf(file))}
-                    >
-                      {file.type === 'image' ? (
-                        <div className="aspect-square rounded-xl overflow-hidden border border-gray-200 relative">
-                          <img 
-                            src={file.url} 
-                            alt={file.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                          />
-                          {/* Hover Overlay */}
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
-                            <div className="opacity-0 group-hover:opacity-100 transition-all flex items-center gap-2">
-                              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-                                <FiMaximize2 className="w-5 h-5 text-gray-700" />
+                  {customer.attachments.map((file, index) => {
+                    const FileIcon = getFileIcon(file.file_type)
+                    const isImage = file.file_type?.startsWith('image/')
+                    const fileUrl = `https://www.fist-o.com/eco_energy/${file.file_path}`
+                    
+                    return (
+                      <div 
+                        key={file.id} 
+                        className="relative group cursor-pointer"
+                        onClick={() => openAttachment(file, imageAttachments.indexOf(file))}
+                      >
+                        {isImage ? (
+                          <div className="aspect-square rounded-xl overflow-hidden border border-gray-200 relative">
+                            <img 
+                              src={fileUrl} 
+                              alt={file.original_name || file.file_name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              onError={(e) => {
+                                e.target.onerror = null
+                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlYmViZWIiLz48cGF0aCBkPSJNNjUgNDVINTVWNTVINjVWNjVINDUiIHN0cm9rZT0iI2JjYmNiYyIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+'
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 transition-all flex items-center gap-2">
+                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                  <FiMaximize2 className="w-5 h-5 text-gray-700" />
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="aspect-square rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-3 hover:bg-gray-100 transition-colors">
-                          <FiFile className="w-8 h-8 text-gray-400 mb-2" />
-                          <span className="text-xs text-gray-500 text-center truncate w-full">{file.name}</span>
-                          <div className="mt-2 flex items-center gap-1 text-xs text-slate-600">
-                            <FiExternalLink className="w-3 h-3" />
-                            Open
+                        ) : (
+                          <div className="aspect-square rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-3 hover:bg-gray-100 transition-colors">
+                            <FileIcon className="w-8 h-8 text-gray-400 mb-2" />
+                            <span className="text-xs text-gray-500 text-center truncate w-full">
+                              {file.original_name || file.file_name}
+                            </span>
+                            <div className="mt-2 flex items-center gap-1 text-xs text-slate-600">
+                              <FiExternalLink className="w-3 h-3" />
+                              Open
+                            </div>
                           </div>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1.5 truncate">{file.original_name || file.file_name}</p>
+                        <div className="text-xs text-gray-400">
+                          {Math.round((file.file_size || 0) / 1024)} KB
                         </div>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1.5 truncate">{file.name}</p>
-                    </div>
-                  ))}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -821,9 +1448,22 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium text-sm transition-all cursor-pointer"
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium text-sm transition-all cursor-pointer"
               >
                 Close
+              </button>
+              <button
+                onClick={onEdit}
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <FiEdit2 className="w-4 h-4" />
+                Edit
+              </button>
+              <button
+                onClick={onDelete}
+                className="py-3 px-4 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl font-medium text-sm transition-all cursor-pointer"
+              >
+                <FiTrash2 className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -838,14 +1478,16 @@ const CustomerDetailModal = ({ customer, onClose, getPriorityBadge, formatDate }
           currentIndex={currentAttachmentIndex}
           onClose={() => setViewingAttachment(null)}
           onNavigate={navigateAttachment}
+          onDownload={handleDownload}
         />
       )}
     </>
   )
 }
 
+
 // Full Screen Attachment Viewer Component
-const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) => {
+const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate, onDownload }) => {
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
 
@@ -857,23 +1499,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
     setRotation(0)
   }
 
-  const handleDownload = async () => {
-    try {
-      const response = await fetch(file.url)
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = file.name
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      // Fallback: open in new tab
-      window.open(file.url, '_blank')
-    }
-  }
+  const fileUrl = `https://www.fist-o.com/eco_energy/${file.file_path}`
 
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') onClose()
@@ -882,7 +1508,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
   }
 
   // Add keyboard event listener
-  useState(() => {
+  useEffect(() => {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
@@ -896,7 +1522,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
       <div className="flex items-center justify-between p-3 sm:p-4 bg-black/50">
         <div className="flex items-center gap-3 min-w-0">
           <div className="text-white text-sm sm:text-base font-medium truncate max-w-[150px] sm:max-w-[300px]">
-            {file.name}
+            {file.original_name || file.file_name}
           </div>
           {files.length > 1 && (
             <span className="text-white/60 text-sm">
@@ -911,7 +1537,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
           <button
             onClick={handleZoomOut}
             disabled={zoom <= 0.5}
-            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             title="Zoom Out"
           >
             <FiZoomOut className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -922,7 +1548,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
           <button
             onClick={handleZoomIn}
             disabled={zoom >= 3}
-            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             title="Zoom In"
           >
             <FiZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -933,7 +1559,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
           {/* Rotate */}
           <button
             onClick={handleRotate}
-            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all cursor-pointer"
             title="Rotate"
           >
             <FiRotateCw className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -942,7 +1568,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
           {/* Reset */}
           <button
             onClick={handleReset}
-            className="hidden sm:flex p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+            className="hidden sm:flex p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all cursor-pointer"
             title="Reset"
           >
             <FiMaximize2 className="w-5 h-5" />
@@ -952,8 +1578,8 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
 
           {/* Download */}
           <button
-            onClick={handleDownload}
-            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+            onClick={() => onDownload(file)}
+            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all cursor-pointer"
             title="Download"
           >
             <FiDownload className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -962,7 +1588,7 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
           {/* Close */}
           <button
             onClick={onClose}
-            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all ml-1 sm:ml-2"
+            className="p-2 sm:p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all ml-1 sm:ml-2 cursor-pointer"
             title="Close"
           >
             <FiX className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -978,14 +1604,14 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
             <button
               onClick={() => onNavigate(-1)}
               disabled={currentIndex === 0}
-              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10"
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10 cursor-pointer"
             >
               <FiChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             <button
               onClick={() => onNavigate(1)}
               disabled={currentIndex === files.length - 1}
-              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10"
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed z-10 cursor-pointer"
             >
               <FiChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
@@ -1000,8 +1626,8 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
           }}
         >
           <img
-            src={file.url}
-            alt={file.name}
+            src={fileUrl}
+            alt={file.original_name || file.file_name}
             className="max-w-none transition-transform duration-200"
             style={{
               transform: `scale(${zoom}) rotate(${rotation}deg)`,
@@ -1009,6 +1635,10 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
               maxHeight: zoom === 1 ? '100%' : 'none'
             }}
             draggable={false}
+            onError={(e) => {
+              e.target.onerror = null
+              e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiMyMDI0MjkiLz48cGF0aCBkPSJNNjUgNDVINTVWNTVINjVWNjVINDUiIHN0cm9rZT0iIzhjOWFhYiIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+'
+            }}
           />
         </div>
       </div>
@@ -1017,25 +1647,33 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
       {files.length > 1 && (
         <div className="bg-black/50 p-2 sm:p-3">
           <div className="flex gap-2 justify-center overflow-x-auto pb-1">
-            {files.map((f, index) => (
-              <button
-                key={f.id}
-                onClick={() => {
-                  onNavigate(index - currentIndex)
-                }}
-                className={`w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${
-                  index === currentIndex 
-                    ? 'border-white opacity-100' 
-                    : 'border-transparent opacity-50 hover:opacity-75'
-                }`}
-              >
-                <img
-                  src={f.url}
-                  alt={f.name}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
+            {files.map((f, index) => {
+              const thumbUrl = `https://www.fist-o.com/eco_energy/${f.file_path}`
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => {
+                    onNavigate(index - currentIndex);
+                    console.log("Thumb url: ", thumbUrl);
+                  }}
+                  className={`w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all cursor-pointer ${
+                    index === currentIndex 
+                      ? 'border-white opacity-100' 
+                      : 'border-transparent opacity-50 hover:opacity-75'
+                  }`}
+                >
+                  <img
+                    src={thumbUrl}
+                    alt={f.original_name || f.file_name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null
+                      e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiMyMDI0MjkiLz48cGF0aCBkPSJNNjUgNDVINTVWNTVINjVWNjVINDUiIHN0cm9rZT0iIzhjOWFhYiIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+'
+                    }}
+                  />
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
@@ -1043,8 +1681,8 @@ const AttachmentViewer = ({ file, files, currentIndex, onClose, onNavigate }) =>
       {/* Mobile Download Button */}
       <div className="sm:hidden p-4 bg-black/50">
         <button
-          onClick={handleDownload}
-          className="w-full py-3 bg-white text-gray-900 rounded-xl font-medium text-sm flex items-center justify-center gap-2"
+          onClick={() => onDownload(file)}
+          className="w-full py-3 bg-white text-gray-900 rounded-xl font-medium text-sm flex items-center justify-center gap-2 cursor-pointer"
         >
           <FiDownload className="w-4 h-4" />
           Download Image
