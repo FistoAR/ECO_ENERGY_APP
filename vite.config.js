@@ -29,10 +29,15 @@ export default defineConfig({
       },
     ],
   },
+
   workbox: {
     navigateFallback: "/index.html",
+
+    // 👇 THIS is what you were missing
+    globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
   },
 })
+
 
   ],
   server: {
